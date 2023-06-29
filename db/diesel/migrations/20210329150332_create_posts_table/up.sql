@@ -1,13 +1,6 @@
-CREATE TABLE posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title VARCHAR NOT NULL,
-    text VARCHAR NOT NULL,
-    published BOOLEAN NOT NULL DEFAULT 0
-);
-
 CREATE TABLE qc_forms (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    assemblydate VARCHAR NOT NULL,
+    assemblydate DATETIME NOT NULL,
     buildlocation VARCHAR NOT NULL,
     buildtype VARCHAR NOT NULL,
     drivetype VARCHAR NOT NULL,

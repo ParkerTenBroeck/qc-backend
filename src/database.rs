@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
@@ -12,27 +14,19 @@ use crate::qurry_builder::{ExpressionParser};
 
 use self::diesel::prelude::*;
 
+use crate::schema::*;
+
 #[database("diesel")]
 pub struct Db(diesel::SqliteConnection);
 
 
 type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
-#[serde(crate = "rocket::serde")]
-#[diesel(table_name = posts)]
-struct Post {
-    #[serde(skip_deserializing)]
-    id: Option<i32>,
-    title: String,
-    text: String,
-    #[serde(skip_deserializing)]
-    published: bool,
-}
+
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
-#[diesel(table_name = qc_forms)]
+#[diesel(table_name = crate::schema::qc_forms)]
 struct QCForm {
     #[serde(skip_deserializing)]
     id: Option<i32>,
@@ -64,15 +58,6 @@ fn time_default() -> time::OffsetDateTime {
     time::OffsetDateTime::now_utc()
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
-#[serde(crate = "rocket::serde")]
-#[diesel(table_name = user_accounts)]
-struct UserAccount {
-    #[serde(skip_deserializing)]
-    id: Option<i32>,
-    email: String,
-    password: String,
-}
 
 macro_rules! dyn_qc_form_column {
     ($column:expr, $ident:ident, $succ:block, $fail:block) => {
@@ -165,62 +150,6 @@ macro_rules! dyn_qc_form_column {
         }
     };
 }
-
-table! {
-    qc_forms(id) {
-        id -> Nullable<Integer>,
-        // assembly_date -> Text,
-        assemblydate -> TimestamptzSqlite,
-        buildlocation -> Text,
-        buildtype -> Text,
-        drivetype -> Text,
-        itemserial -> Text,
-        makemodel -> Text,
-        msoinstalled -> Text,
-        operatingsystem -> Text,
-        processorgen -> Text,
-        processortype -> Text,
-        qc1 -> Text,
-        qc1initial -> Text,
-        qc2 -> Text,
-        qc2initial -> Text,
-
-        ramsize -> Text,
-        ramtype -> Text,
-        rctpackage -> Text,
-        salesorder -> Text,
-        technotes -> Text,
-    }
-}
-
-table! {
-    posts (id) {
-        id -> Nullable<Integer>,
-        title -> Text,
-        text -> Text,
-        published -> Bool,
-    }
-}
-table! {
-    user_accounts(id){
-        id -> Nullable<Integer>,
-        email -> Text,
-        password -> Text,
-    }
-}
-
-// #[post("/", data = "<post>")]
-// async fn create(db: Db, post: Json<Post>) -> Result<Created<Json<Post>>> {
-//     let post_value = post.clone();
-//     db.run(move |conn| {
-//         diesel::insert_into(posts::table)
-//             .values(&*post_value)
-//             .execute(conn)
-//     })
-//     .await?;
-
-//     Ok(Created::new("/").body(post))
-// }
 
 #[post("/", data = "<post>")]
 async fn create(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
@@ -418,26 +347,6 @@ async fn read(db: Db, id: i32) -> Option<Json<QCForm>> {
         .ok()
 }
 
-#[delete("/<id>")]
-async fn delete(db: Db, id: i32) -> Result<Option<()>> {
-    let affected = db
-        .run(move |conn| {
-            diesel::delete(posts::table)
-                .filter(posts::id.eq(id))
-                .execute(conn)
-        })
-        .await?;
-
-    Ok((affected == 1).then_some(()))
-}
-
-#[delete("/")]
-async fn destroy(db: Db) -> Result<()> {
-    db.run(move |conn| diesel::delete(posts::table).execute(conn))
-        .await?;
-
-    Ok(())
-}
 
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -463,7 +372,7 @@ pub fn stage() -> AdHoc {
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
             .mount(
                 "/api",
-                routes![list, read, create, delete, destroy, list_search],
+                routes![list, read, create, list_search],
             )
     })
 }

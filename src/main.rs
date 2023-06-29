@@ -15,8 +15,9 @@ extern crate rocket_sync_db_pools;
 
 use rocket_dyn_templates::Template;
 
-mod database;
-mod qurry_builder;
+pub mod database;
+pub mod qurry_builder;
+pub mod schema;
 
 #[launch]
 fn rocket() -> _ {
