@@ -78,7 +78,7 @@ struct QCForm {
     technotes: String,
 }
 
-fn time_default() -> time::OffsetDateTime{
+fn time_default() -> time::OffsetDateTime {
     time::OffsetDateTime::now_utc()
 }
 
@@ -90,6 +90,95 @@ struct UserAccount {
     id: Option<i32>,
     email: String,
     password: String,
+}
+
+macro_rules! dyn_qc_form_column {
+    ($column:expr, $ident:ident, $succ:block, $fail:block) => {
+        match $column {
+            "id" => {
+                let $ident = qc_forms::id;
+                $succ
+            }
+            "assemblydate" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "buildlocation" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "buildtype" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "drivetype" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "itemserial" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "makemodel" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "msoinstalled" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "operatingsystem" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "processorgen" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "processortype" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "qc1" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "qc1initial" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "qc2" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "qc2initial" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+
+            "ramsize" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "ramtype" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "rctpackage" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "salesorder" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            "technotes" => {
+                let $ident = qc_forms::assemblydate;
+                $succ
+            }
+            _ => $fail,
+        }
+    };
 }
 
 table! {
@@ -148,59 +237,8 @@ table! {
 //     Ok(Created::new("/").body(post))
 // }
 
-mod time_shmuk {
-    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-
-    use time::OffsetDateTime;
-
-    /// Serialize an `OffsetDateTime` as its Unix timestamp
-    pub fn serialize<S: Serializer>(
-        datetime: &OffsetDateTime,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error> {
-        time::serde::iso8601::serialize(datetime, serializer)
-    }
-
-    /// Deserialize an `OffsetDateTime` from its Unix timestamp
-    pub fn deserialize<'a, D: Deserializer<'a>>(
-        deserializer: D,
-    ) -> Result<OffsetDateTime, D::Error> {
-        time::serde::iso8601::option::deserialize(deserializer).map(|f| {
-            if let Some(some) = f {
-                some
-            } else {
-                time::OffsetDateTime::now_utc()
-            }
-        })
-    }
-
-    pub mod option {
-        #[allow(clippy::wildcard_imports)]
-        use super::*;
-
-        pub fn serialize<S: Serializer>(
-            option: &Option<OffsetDateTime>,
-            serializer: S,
-        ) -> Result<S::Ok, S::Error> {
-            time::serde::iso8601::option::serialize(option, serializer)
-        }
-
-        /// Deserialize an `Option<OffsetDateTime>` from its Unix timestamp
-        pub fn deserialize<'a, D: Deserializer<'a>>(
-            deserializer: D,
-        ) -> Result<Option<OffsetDateTime>, D::Error> {
-            time::serde::iso8601::option::deserialize(deserializer)
-        }
-    }
-}
-
 #[post("/", data = "<post>")]
 async fn create(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
-
-    // time::serde::format_description!()
-    // let now_odt = time::OffsetDateTime::now_utc();
-    // let now_pdt = PrimitiveDateTime::new(now_odt.date(), now_odt.time());
-    // println!("{}", now_pdt.format(&time::format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap()).unwrap());
     let post_value = post.clone();
     db.run(move |conn| {
         diesel::insert_into(qc_forms::table)
@@ -208,7 +246,7 @@ async fn create(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
             .execute(conn)
     })
     .await?;
-    Ok(Created::new("/").body(post.into()))
+    Ok(Created::new("/").body(post))
 }
 
 // #[get("/")]
@@ -227,7 +265,7 @@ async fn list(db: Db) -> Result<Json<Vec<QCForm>>> {
     Ok(qc_posts.into())
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
 struct TokenizerPosition {
     byte_index: usize,
     char_index: usize,
@@ -235,18 +273,156 @@ struct TokenizerPosition {
 
 struct Tokenizer<'a> {
     str: &'a str,
-    chars: Chars<'a>,
+    chars: std::iter::Peekable<Chars<'a>>,
     current: TokenizerPosition,
 }
-enum Token<'a> {
+
+impl<'a> Tokenizer<'a> {
+    pub fn new(str: &'a str) -> Self {
+        Self {
+            chars: str.chars().peekable(),
+            str,
+            current: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum TokenizerError{
+    InvalidChar(char, TokenizerPosition),
+    UnclosedString(TokenizerPosition),
+}
+
+
+impl<'a> Iterator for Tokenizer<'a> {
+    type Item = std::result::Result<Token, TokenizerError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        enum TokenizerState {
+            Default,
+            Ident,
+            String,
+        }
+        let mut state = TokenizerState::Default;
+        let mut current = self.current;
+        let mut last = current;
+        let mut string_builder = String::new();
+        while let Some(char) = self.chars.peek().copied() {
+            match state {
+                TokenizerState::Default => {
+                    let mut ret: Option<Token> = None;
+                    match char {
+                        '(' => ret = Some(Token::LPar),
+                        ')' => ret = Some(Token::RPar),
+                        '|' => ret = Some(Token::Or),
+                        '&' => ret = Some(Token::And),
+                        '>' => ret = Some(Token::Gt),
+                        '<' => ret = Some(Token::Lt),
+                        '*' => ret = Some(Token::Star),
+                        '^' => ret = Some(Token::Carrot),
+                        ':' => ret = Some(Token::Colon),
+                        ';' => ret = Some(Token::Semicolon),
+                        '"' => {
+                            state = TokenizerState::String;
+                            self.chars.next();
+                            current.byte_index += char.len_utf8();
+                            current.char_index += 1;
+                        },
+                        char if char.is_alphabetic() => state = TokenizerState::Ident,
+                        char if char.is_whitespace() => {
+                            self.chars.next();
+                            current.byte_index += char.len_utf8();
+                            current.char_index += 1;
+                            self.current = current;
+                        }
+                        bad_char => {
+                            let res = Err(TokenizerError::InvalidChar(bad_char, self.current));
+                            self.chars.next();
+                            current.byte_index += char.len_utf8();
+                            current.char_index += 1;
+                            self.current = current;
+                            return Some(res);
+                        }
+                    }
+
+                    if ret.is_some() {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        self.current = current;
+                        return ret.map(|f|Ok(f));
+                    }
+                }
+                TokenizerState::Ident => {
+                    if char.is_alphabetic() {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                    } else {
+                        let token = Token::Ident(
+                            self.str[self.current.byte_index..current.byte_index].to_owned(),
+                        );
+                        self.current = last;
+                        return Some(Ok(token));
+                    }
+                }
+                TokenizerState::String => {
+                    if char == '"' {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        self.current = current;
+
+                        return Some(Ok(Token::Value(string_builder)));
+                    } else {
+                        string_builder.push(char);
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                    }
+                }
+            }
+            last = current;
+        }
+        match state{
+            TokenizerState::Default => None,
+            TokenizerState::Ident => {
+                let token = Token::Ident(
+                    self.str[self.current.byte_index..].to_owned(),
+                );
+                Some(Ok(token))
+            },
+            TokenizerState::String => {
+                Some(Err(TokenizerError::UnclosedString(self.current)))
+            },
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum Token {
     LPar,
     RPar,
     Or,
     And,
-    Filter {
-        column_name: &'a str,
-        data_filter: &'a str,
-    },
+    Lt,
+    Gt,
+    Colon,
+    Semicolon,
+    Carrot,
+    Star,
+    Ident(String),
+    Value(String),
+}
+
+#[test]
+fn test() {
+    let str = "\"pa(lol | $%
+    this is a test :: *^<>| hello)paasdas";
+    let tokenizer = Tokenizer::new(str);
+
+    let tokens: Vec<_> = tokenizer.collect();
+    println!("stuff: {:#?}", tokens);
 }
 
 type DynTable = diesel_dynamic_schema::Table<String>;
@@ -255,6 +431,13 @@ type DynExpr =
 
 #[get("/test/<search>")]
 async fn list_search(db: Db, search: &str) -> Result<Json<Vec<QCForm>>> {
+    let res: Box<
+        dyn BoxableExpression<
+            qc_forms::table,
+            Sqlite,
+            SqlType = diesel::expression::expression_types::NotSelectable,
+        >,
+    > = dyn_qc_form_column!("test", column, { Box::new(column.asc()) }, { todo!() });
     let mut boxed = qc_forms::table
         .order_by(qc_forms::id.asc())
         .limit(100)
@@ -267,6 +450,7 @@ async fn list_search(db: Db, search: &str) -> Result<Json<Vec<QCForm>>> {
     let tabel = table("qc_forms");
     let comumn = tabel.column::<diesel::sql_types::Text, _>("processortype");
 
+    // qc_forms::processortype.
     // let mut boxed_thing = Box::new(qc_forms::processorgen);
     // boxed_thing = Box::new(qc_forms::processortype);
 
@@ -285,6 +469,28 @@ async fn list_search(db: Db, search: &str) -> Result<Json<Vec<QCForm>>> {
     let totally_fucked: DynExpr = Box::new(fucked.or(fucked_2));
 
     boxed = boxed.filter(totally_fucked);
+
+    // let kind = 1;
+    // let name = "";
+    // let table: diesel_dynamic_schema::Column<diesel_dynamic_schema::Table<qc_forms::table>, &str, diesel::sql_types::Text> = table(qc_forms::table).column::<diesel::sql_types::Text, _>("as");
+    // let stupid = match name{
+    //     "bruh" => {
+    //         qc_forms::assemblydate
+    //     },
+    //     _ => {
+    //         qc_forms::buildtype
+    //     }
+    // };
+    // // None?
+    // match kind {
+    //     0 => {
+    //         tabel
+    //     }
+
+    //     _ => {
+
+    //     }
+    // }carog
 
     let qc_posts: Vec<QCForm> = db.run(move |conn| boxed.load(conn)).await?;
 
