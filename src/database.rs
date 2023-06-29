@@ -11,6 +11,8 @@ use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
+use crate::qurry_builder::ExpressionParser;
+
 use self::diesel::prelude::*;
 
 #[database("diesel")]
@@ -265,210 +267,89 @@ async fn list(db: Db) -> Result<Json<Vec<QCForm>>> {
     Ok(qc_posts.into())
 }
 
-#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
-struct TokenizerPosition {
-    byte_index: usize,
-    char_index: usize,
-}
-
-struct Tokenizer<'a> {
-    str: &'a str,
-    chars: std::iter::Peekable<Chars<'a>>,
-    current: TokenizerPosition,
-}
-
-impl<'a> Tokenizer<'a> {
-    pub fn new(str: &'a str) -> Self {
-        Self {
-            chars: str.chars().peekable(),
-            str,
-            current: Default::default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-enum TokenizerError{
-    InvalidChar(char, TokenizerPosition),
-    UnclosedString(TokenizerPosition),
-}
-
-
-impl<'a> Iterator for Tokenizer<'a> {
-    type Item = std::result::Result<Token, TokenizerError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        enum TokenizerState {
-            Default,
-            Ident,
-            String,
-        }
-        let mut state = TokenizerState::Default;
-        let mut current = self.current;
-        let mut last = current;
-        let mut string_builder = String::new();
-        while let Some(char) = self.chars.peek().copied() {
-            match state {
-                TokenizerState::Default => {
-                    let mut ret: Option<Token> = None;
-                    match char {
-                        '(' => ret = Some(Token::LPar),
-                        ')' => ret = Some(Token::RPar),
-                        '|' => ret = Some(Token::Or),
-                        '&' => ret = Some(Token::And),
-                        '>' => ret = Some(Token::Gt),
-                        '<' => ret = Some(Token::Lt),
-                        '*' => ret = Some(Token::Star),
-                        '^' => ret = Some(Token::Carrot),
-                        ':' => ret = Some(Token::Colon),
-                        ';' => ret = Some(Token::Semicolon),
-                        '"' => {
-                            state = TokenizerState::String;
-                            self.chars.next();
-                            current.byte_index += char.len_utf8();
-                            current.char_index += 1;
-                        },
-                        char if char.is_alphabetic() => state = TokenizerState::Ident,
-                        char if char.is_whitespace() => {
-                            self.chars.next();
-                            current.byte_index += char.len_utf8();
-                            current.char_index += 1;
-                            self.current = current;
-                        }
-                        bad_char => {
-                            let res = Err(TokenizerError::InvalidChar(bad_char, self.current));
-                            self.chars.next();
-                            current.byte_index += char.len_utf8();
-                            current.char_index += 1;
-                            self.current = current;
-                            return Some(res);
-                        }
-                    }
-
-                    if ret.is_some() {
-                        self.chars.next();
-                        current.byte_index += char.len_utf8();
-                        current.char_index += 1;
-                        self.current = current;
-                        return ret.map(|f|Ok(f));
-                    }
-                }
-                TokenizerState::Ident => {
-                    if char.is_alphabetic() {
-                        self.chars.next();
-                        current.byte_index += char.len_utf8();
-                        current.char_index += 1;
-                    } else {
-                        let token = Token::Ident(
-                            self.str[self.current.byte_index..current.byte_index].to_owned(),
-                        );
-                        self.current = last;
-                        return Some(Ok(token));
-                    }
-                }
-                TokenizerState::String => {
-                    if char == '"' {
-                        self.chars.next();
-                        current.byte_index += char.len_utf8();
-                        current.char_index += 1;
-                        self.current = current;
-
-                        return Some(Ok(Token::Value(string_builder)));
-                    } else {
-                        string_builder.push(char);
-                        self.chars.next();
-                        current.byte_index += char.len_utf8();
-                        current.char_index += 1;
-                    }
-                }
-            }
-            last = current;
-        }
-        match state{
-            TokenizerState::Default => None,
-            TokenizerState::Ident => {
-                let token = Token::Ident(
-                    self.str[self.current.byte_index..].to_owned(),
-                );
-                Some(Ok(token))
-            },
-            TokenizerState::String => {
-                Some(Err(TokenizerError::UnclosedString(self.current)))
-            },
-        }
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum Token {
-    LPar,
-    RPar,
-    Or,
-    And,
-    Lt,
-    Gt,
-    Colon,
-    Semicolon,
-    Carrot,
-    Star,
-    Ident(String),
-    Value(String),
-}
-
-#[test]
-fn test() {
-    let str = "\"pa(lol | $%
-    this is a test :: *^<>| hello)paasdas";
-    let tokenizer = Tokenizer::new(str);
-
-    let tokens: Vec<_> = tokenizer.collect();
-    println!("stuff: {:#?}", tokens);
-}
-
 type DynTable = diesel_dynamic_schema::Table<String>;
 type DynExpr =
     Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
 
 #[get("/test/<search>")]
 async fn list_search(db: Db, search: &str) -> Result<Json<Vec<QCForm>>> {
-    let res: Box<
-        dyn BoxableExpression<
-            qc_forms::table,
-            Sqlite,
-            SqlType = diesel::expression::expression_types::NotSelectable,
-        >,
-    > = dyn_qc_form_column!("test", column, { Box::new(column.asc()) }, { todo!() });
-    let mut boxed = qc_forms::table
+
+    // struct VisitorTest{
+
+    // };
+    // impl VisitorTest{
+    //     pub fn new() -> Self{
+    //         Self{}
+    //     }
+    // }
+    // impl crate::qurry_builder::Visitor<String> for VisitorTest{
+    //     fn eq(&mut self, ident: String, value: String) -> String{
+    //         format!("({}={:#?})", ident, value)
+    //     }
+    //     fn lt(&mut self, ident: String, value: String) -> String{
+    //         format!("({}<{:#?})", ident, value)
+    //     }
+    //     fn gt(&mut self, ident: String, value: String) -> String{
+    //         format!("({}>{:#?})", ident, value)
+    //     }
+    //     fn colon(&mut self, ident: String, value: String) -> String{
+    //         format!("({}:{:#?})", ident, value)
+    //     }
+
+    //     fn or(&mut self, ls: String, rs: String) -> String{
+    //         format!("({}|{})", ls, rs)
+    //     }
+
+    //     fn and(&mut self, ls: String, rs: String) -> String{
+    //         format!("({}&{})", ls, rs)
+    //     }
+
+    // }
+    // let mut visitor = VisitorTest::new();
+    // let mut expr = ExpressionParser::new(search, &mut visitor);
+    // let res = expr.parse();
+    // drop(expr);
+    // println!("{:#?}", res);
+
+
+    // let res: Box<
+    //     dyn BoxableExpression<
+    //         qc_forms::table,
+    //         Sqlite,
+    //         SqlType = diesel::expression::expression_types::NotSelectable,
+    //     >,
+    // > = dyn_qc_form_column!("test", column, { Box::new(column.asc()) }, { todo!() });
+    let boxed = qc_forms::table
         .order_by(qc_forms::id.asc())
         .limit(100)
         .into_boxed();
 
-    use diesel_dynamic_schema::table;
+    // use diesel_dynamic_schema::table;
 
-    let bruh: diesel::sql_types::TimestamptzSqlite;
+    // let bruh: diesel::sql_types::TimestamptzSqlite;
 
-    let tabel = table("qc_forms");
-    let comumn = tabel.column::<diesel::sql_types::Text, _>("processortype");
+    // let tabel = table("qc_forms");
+    // let comumn = tabel.column::<diesel::sql_types::Text, _>("processortype");
 
-    // qc_forms::processortype.
-    // let mut boxed_thing = Box::new(qc_forms::processorgen);
-    // boxed_thing = Box::new(qc_forms::processortype);
+    // // qc_forms::processortype.
+    // // let mut boxed_thing = Box::new(qc_forms::processorgen);
+    // // boxed_thing = Box::new(qc_forms::processortype);
 
-    // boxed = boxed.filter(boxed_thing.like("other"));
-    let res: Box<
-        dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>,
-    > = Box::new(qc_forms::processortype.like("other"));
+    // // boxed = boxed.filter(boxed_thing.like("other"));
+    // let res: Box<
+    //     dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>,
+    // > = Box::new(qc_forms::processortype.like("other"));
 
-    boxed = boxed.filter(res);
-    boxed = boxed.filter(qc_forms::processortype.like("other"));
-    boxed = boxed.filter(qc_forms::salesorder.like("other"));
-    boxed = boxed.filter(qc_forms::salesorder.like("other"));
+    // boxed = boxed.filter(res);
+    // boxed = boxed.filter(qc_forms::processortype.like("other"));
+    // boxed = boxed.filter(qc_forms::salesorder.like("other"));
+    // boxed = boxed.filter(qc_forms::salesorder.like("other"));
 
-    let fucked: DynExpr = Box::new(qc_forms::processortype.like("other"));
-    let fucked_2 = Box::new(qc_forms::processortype.like("other"));
-    let totally_fucked: DynExpr = Box::new(fucked.or(fucked_2));
+    // let fucked: DynExpr = Box::new(qc_forms::processortype.like("other"));
+    // let fucked_2 = Box::new(qc_forms::processortype.like("other"));
+    // let totally_fucked: DynExpr = Box::new(fucked.or(fucked_2));
 
-    boxed = boxed.filter(totally_fucked);
+    // boxed = boxed.filter(totally_fucked);
 
     // let kind = 1;
     // let name = "";
@@ -553,39 +434,4 @@ pub fn stage() -> AdHoc {
                 routes![list, read, create, delete, destroy, list_search],
             )
     })
-}
-
-mod tests {
-    use rocket::{http::Status, local::blocking::Client};
-
-    use super::posts;
-    use crate::database::Db;
-    use diesel::prelude::*;
-    use rocket::fairing::AdHoc;
-    use rocket::request::FromRequest;
-    use rocket::response::{status::Created, Debug};
-    use rocket::serde::{json::Json, Deserialize, Serialize};
-    use rocket::{Build, Rocket};
-
-    // #[get("/bruh")]
-    // async fn destroy(db: Db) -> Result<()> {
-    //     db.run(move |conn| diesel::delete(posts::table).execute(conn)).await?;
-
-    //     Ok(())
-    // }
-
-    #[test]
-    fn database_test() {
-        let rocket = rocket::build().attach(super::stage());
-        let db: &Db = rocket.state().unwrap();
-        db.run(|db| {});
-        let client = Client::tracked(rocket).unwrap();
-        println!("{:#?}", client.put("/diesel").dispatch().into_string());
-        assert_eq!(client.delete("/diesel").dispatch().status(), Status::Ok);
-        assert_eq!(
-            client.get("/diesel").dispatch().into_json::<Vec<i64>>(),
-            Some(vec![])
-        );
-        // client.
-    }
 }
