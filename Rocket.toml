@@ -1,0 +1,10 @@
+[default]
+template_dir = "templates"
+
+[default.databases.diesel]
+url = "db/diesel/db.sqlite"
+timeout = 10
+
+[global]
+address = "0.0.0.0"
+port = 8000
