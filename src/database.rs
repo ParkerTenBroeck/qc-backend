@@ -96,86 +96,89 @@ struct UserAccount {
 
 macro_rules! dyn_qc_form_column {
     ($column:expr, $ident:ident, $succ:block, $fail:block) => {
+        dyn_qc_form_column!($column, $ident, $succ, $succ, $succ, $fail)
+    };
+    ($column:expr, $ident:ident, $succ:block, $succ_id:block, $succ_date:block, $fail:block) => {
         match $column {
             "id" => {
                 let $ident = qc_forms::id;
-                $succ
+                $succ_id
             }
             "assemblydate" => {
                 let $ident = qc_forms::assemblydate;
-                $succ
+                $succ_date
             }
             "buildlocation" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::buildlocation;
                 $succ
             }
             "buildtype" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::buildtype;
                 $succ
             }
             "drivetype" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::drivetype;
                 $succ
             }
             "itemserial" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::itemserial;
                 $succ
             }
             "makemodel" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::makemodel;
                 $succ
             }
             "msoinstalled" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::msoinstalled;
                 $succ
             }
             "operatingsystem" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::operatingsystem;
                 $succ
             }
             "processorgen" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::processorgen;
                 $succ
             }
             "processortype" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::processortype;
                 $succ
             }
             "qc1" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::qc1;
                 $succ
             }
             "qc1initial" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::qc1initial;
                 $succ
             }
             "qc2" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::qc2;
                 $succ
             }
             "qc2initial" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::qc2initial;
                 $succ
             }
 
             "ramsize" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::ramsize;
                 $succ
             }
             "ramtype" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::ramtype;
                 $succ
             }
             "rctpackage" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::rctpackage;
                 $succ
             }
             "salesorder" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::salesorder;
                 $succ
             }
             "technotes" => {
-                let $ident = qc_forms::assemblydate;
+                let $ident = qc_forms::technotes;
                 $succ
             }
             _ => $fail,
@@ -272,42 +275,76 @@ type DynExpr =
     Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
 
 #[get("/test/<search>")]
-async fn list_search(db: Db, search: &str) -> Result<Json<Vec<QCForm>>> {
+async fn list_search(db: Db, search: Option<&str>) -> Result<Json<Vec<QCForm>>> {
 
-    // struct VisitorTest{
+    struct VisitorTest{
 
-    // };
-    // impl VisitorTest{
-    //     pub fn new() -> Self{
-    //         Self{}
-    //     }
-    // }
-    // impl crate::qurry_builder::Visitor<String> for VisitorTest{
-    //     fn eq(&mut self, ident: String, value: String) -> String{
-    //         format!("({}={:#?})", ident, value)
-    //     }
-    //     fn lt(&mut self, ident: String, value: String) -> String{
-    //         format!("({}<{:#?})", ident, value)
-    //     }
-    //     fn gt(&mut self, ident: String, value: String) -> String{
-    //         format!("({}>{:#?})", ident, value)
-    //     }
-    //     fn colon(&mut self, ident: String, value: String) -> String{
-    //         format!("({}:{:#?})", ident, value)
-    //     }
+    }
+    impl VisitorTest{
+        pub fn new() -> Self{
+            Self{}
+        }
+    }
+    impl crate::qurry_builder::Visitor<DynExpr> for VisitorTest{
+        fn eq(&mut self, ident: String, value: String) -> DynExpr{
+            // format!("({}={:#?})", ident, value)
+            dyn_qc_form_column!(ident.as_str(), column, {
+                Box::new(column.eq(value))
+            }, {todo!()}, {todo!()}, {
+                todo!()   
+            })
+        }
+        fn lt(&mut self, ident: String, value: String) -> DynExpr{
+            dyn_qc_form_column!(ident.as_str(), column, {
+                Box::new(column.lt(value))
+            }, {todo!()}, {todo!()}, {
+                todo!()   
+            })
+        }
+        fn gt(&mut self, ident: String, value: String) -> DynExpr{
+            dyn_qc_form_column!(ident.as_str(), column, {
+                Box::new(column.gt(value))
+            }, {todo!()}, {todo!()}, {
+                todo!()   
+            })
+        }
+        fn colon(&mut self, ident: String, value: String) -> DynExpr{
+            dyn_qc_form_column!(ident.as_str(), column, {
+                Box::new(column.like(value))
+            }, {todo!()}, {todo!()}, {
+                todo!()   
+            })
+        }
 
-    //     fn or(&mut self, ls: String, rs: String) -> String{
-    //         format!("({}|{})", ls, rs)
-    //     }
+        fn or(&mut self, ls: DynExpr, rs: DynExpr) -> DynExpr{
+            Box::new(ls.or(rs))
+        }
 
-    //     fn and(&mut self, ls: String, rs: String) -> String{
-    //         format!("({}&{})", ls, rs)
-    //     }
+        fn and(&mut self, ls: DynExpr, rs: DynExpr) -> DynExpr{
+            Box::new(ls.and(rs))
+        }
 
-    // }
-    // let mut visitor = VisitorTest::new();
-    // let mut expr = ExpressionParser::new(search, &mut visitor);
-    // let res = expr.parse();
+    }
+
+
+    let mut boxed = qc_forms::table
+        .order_by(qc_forms::id.asc())
+        .limit(100)
+        .into_boxed();
+
+    let mut visitor = VisitorTest::new();
+    if let Some(search) = search{
+        let res = ExpressionParser::new(search, &mut visitor).parse();
+    
+        match res{
+            Ok(ok) => {
+                boxed = boxed.filter(ok);
+            }
+            Err(err) => {
+                todo!("{:#?}", err)
+            }
+        }
+    }
     // drop(expr);
     // println!("{:#?}", res);
 
@@ -319,10 +356,7 @@ async fn list_search(db: Db, search: &str) -> Result<Json<Vec<QCForm>>> {
     //         SqlType = diesel::expression::expression_types::NotSelectable,
     //     >,
     // > = dyn_qc_form_column!("test", column, { Box::new(column.asc()) }, { todo!() });
-    let boxed = qc_forms::table
-        .order_by(qc_forms::id.asc())
-        .limit(100)
-        .into_boxed();
+
 
     // use diesel_dynamic_schema::table;
 

@@ -319,7 +319,7 @@ impl<'a,'b, T> ExpressionParser<'a, 'b, T> {
     pub fn new(expression: &'a str, visitor: &'b mut (impl Visitor<T>)) -> Self {
         Self {
             tokenizer: Tokenizer::new(expression).peekable(),
-            visitor: visitor,
+            visitor,
         }
     }
     pub fn parse(&mut self) -> Result<T, ExpressionParserError> {
