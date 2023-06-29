@@ -1,6 +1,8 @@
-use std::{str::Chars, iter::Peekable};
+use std::{iter::Peekable, str::Chars};
 
-#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+use serde::Serialize;
+
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub struct TokenizerPosition {
     pub byte_index: usize,
     pub char_index: usize,
@@ -22,7 +24,7 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
 pub enum TokenizerError {
     InvalidChar(char, TokenizerPosition),
     UnclosedString(TokenizerPosition),
@@ -168,7 +170,7 @@ impl<'a> Iterator for Tokenizer<'a> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize)]
 pub enum Token {
     LPar,
     RPar,
@@ -185,7 +187,7 @@ pub enum Token {
     Value(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TokenFull {
     pub data: Token,
     pub start: TokenizerPosition,
@@ -222,23 +224,23 @@ fn toknizer_test() {
         }
     }
 }
-pub struct ExpressionParser<'a, 'b, T> {
+pub struct ExpressionParser<'a, 'b, T, E> {
     tokenizer: Peekable<Tokenizer<'a>>,
-    visitor: &'b mut dyn Visitor<T>,
+    visitor: &'b mut dyn Visitor<T, E>,
 }
 
-pub trait Visitor<T> {
-    fn eq(&mut self, ident: String, value: String) -> T;
-    fn lt(&mut self, ident: String, value: String) -> T;
-    fn gt(&mut self, ident: String, value: String) -> T;
-    fn colon(&mut self, ident: String, value: String) -> T;
+pub trait Visitor<T, E> {
+    fn eq(&mut self, ident: String, value: String) -> Result<T, E>;
+    fn lt(&mut self, ident: String, value: String) -> Result<T, E>;
+    fn gt(&mut self, ident: String, value: String) -> Result<T, E>;
+    fn colon(&mut self, ident: String, value: String) -> Result<T, E>;
 
-    fn or(&mut self, ls: T, rs: T) -> T;
-    fn and(&mut self, ls: T, rs: T) -> T;
+    fn or(&mut self, ls: T, rs: T) -> Result<T, E>;
+    fn and(&mut self, ls: T, rs: T) -> Result<T, E>;
 }
 
-#[derive(Debug, Clone)]
-pub enum ExpressionParserError {
+#[derive(Debug, Clone, Serialize)]
+pub enum ExpressionParserError<T> {
     TokenizerError(TokenizerError),
     UnexpectedEndOfExpression,
     UnexpectedKnownToken {
@@ -249,6 +251,7 @@ pub enum ExpressionParserError {
         got: TokenFull,
         expected: &'static str,
     },
+    VisitorError(T),
 }
 
 macro_rules! unwrap_token {
@@ -301,68 +304,75 @@ macro_rules! expect_value {
     }};
 }
 
+macro_rules! unwrap_visitor {
+    ($expr:expr) => {
+        match $expr {
+            Ok(ok) => ok,
+            Err(err) => return Err(ExpressionParserError::VisitorError(err)),
+        }
+    };
+}
+
 macro_rules! expect_tok {
     ($token:expr, $needed:pat) => {{
         let token = $token;
-        if matches!(token.data, $needed){
+        if matches!(token.data, $needed) {
             token.data
-        }else{
+        } else {
             return Err(ExpressionParserError::UnexpectedTokenReason {
                 got: token,
                 expected: stringify!($needed),
-            })
+            });
         }
     }};
 }
 
-impl<'a,'b, T> ExpressionParser<'a, 'b, T> {
-    pub fn new(expression: &'a str, visitor: &'b mut (impl Visitor<T>)) -> Self {
+impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
+    pub fn new(expression: &'a str, visitor: &'b mut impl Visitor<T, E>) -> Self {
         Self {
             tokenizer: Tokenizer::new(expression).peekable(),
             visitor,
         }
     }
-    pub fn parse(&mut self) -> Result<T, ExpressionParserError> {
+    pub fn parse(&mut self) -> Result<T, ExpressionParserError<E>> {
         self.parse_top()
     }
 
-    fn parse_top(&mut self) -> Result<T, ExpressionParserError> {
+    fn parse_top(&mut self) -> Result<T, ExpressionParserError<E>> {
         self.parse_3()
     }
 
-    fn parse_3(&mut self) -> Result<T, ExpressionParserError> {
+    fn parse_3(&mut self) -> Result<T, ExpressionParserError<E>> {
         let mut ls = self.parse_2()?;
 
-
-        loop{
-            if tok_matches!(self.tokenizer.peek(), Token::Or){
+        loop {
+            if tok_matches!(self.tokenizer.peek(), Token::Or) {
                 self.tokenizer.next();
                 let rs = self.parse_2()?;
-                ls = self.visitor.or(ls, rs);
-            }else{
+                ls = unwrap_visitor!(self.visitor.or(ls, rs));
+            } else {
                 return Ok(ls);
             }
         }
     }
 
-    fn parse_2(&mut self) -> Result<T, ExpressionParserError> {
+    fn parse_2(&mut self) -> Result<T, ExpressionParserError<E>> {
         let mut ls = self.parse_1()?;
 
-
-        loop{
-            if tok_matches!(self.tokenizer.peek(), Token::And){
+        loop {
+            if tok_matches!(self.tokenizer.peek(), Token::And) {
                 self.tokenizer.next();
                 let rs = self.parse_1()?;
-                ls = self.visitor.or(ls, rs);
-            }else{
+                ls = unwrap_visitor!(self.visitor.or(ls, rs));
+            } else {
                 return Ok(ls);
             }
         }
     }
 
-    fn parse_1(&mut self) -> Result<T, ExpressionParserError> {
+    fn parse_1(&mut self) -> Result<T, ExpressionParserError<E>> {
         let tok = unwrap_token!(self.tokenizer.next());
-        if tok.data == Token::LPar{
+        if tok.data == Token::LPar {
             let expr = self.parse_top();
             expect_tok!(unwrap_token!(self.tokenizer.next()), Token::RPar);
             return expr;
@@ -374,19 +384,19 @@ impl<'a,'b, T> ExpressionParser<'a, 'b, T> {
         match operator.data {
             Token::Eq => {
                 let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(self.visitor.eq(ident, value))
+                Ok(unwrap_visitor!(self.visitor.eq(ident, value)))
             }
             Token::Gt => {
                 let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(self.visitor.gt(ident, value))
+                Ok(unwrap_visitor!(self.visitor.gt(ident, value)))
             }
             Token::Lt => {
                 let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(self.visitor.lt(ident, value))
+                Ok(unwrap_visitor!(self.visitor.lt(ident, value)))
             }
             Token::Colon => {
                 let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(self.visitor.colon(ident, value))
+                Ok(unwrap_visitor!(self.visitor.colon(ident, value)))
             }
             _ => Err(ExpressionParserError::UnexpectedTokenReason {
                 got: operator,
@@ -396,42 +406,38 @@ impl<'a,'b, T> ExpressionParser<'a, 'b, T> {
     }
 }
 
-
 #[test]
-fn test_parser(){
+fn test_parser() {
     let search = "(hello:\"lol\" | two > \"2\")";
-    struct VisitorTest{
-
-    };
-    impl VisitorTest{
-        pub fn new() -> Self{
-            Self{}
+    struct VisitorTest {}
+    impl VisitorTest {
+        pub fn new() -> Self {
+            Self {}
         }
     }
-    impl crate::qurry_builder::Visitor<String> for VisitorTest{
-        fn eq(&mut self, ident: String, value: String) -> String{
-            format!("({}={:#?})", ident, value)
+    impl crate::qurry_builder::Visitor<String, ()> for VisitorTest {
+        fn eq(&mut self, ident: String, value: String) -> Result<String, ()> {
+            Ok(format!("({}={:#?})", ident, value))
         }
-        fn lt(&mut self, ident: String, value: String) -> String{
-            format!("({}<{:#?})", ident, value)
+        fn lt(&mut self, ident: String, value: String) -> Result<String, ()> {
+            Ok(format!("({}<{:#?})", ident, value))
         }
-        fn gt(&mut self, ident: String, value: String) -> String{
-            format!("({}>{:#?})", ident, value)
+        fn gt(&mut self, ident: String, value: String) -> Result<String, ()> {
+            Ok(format!("({}>{:#?})", ident, value))
         }
-        fn colon(&mut self, ident: String, value: String) -> String{
-            format!("({}:{:#?})", ident, value)
-        }
-
-        fn or(&mut self, ls: String, rs: String) -> String{
-            format!("({}|{})", ls, rs)
+        fn colon(&mut self, ident: String, value: String) -> Result<String, ()> {
+            Ok(format!("({}:{:#?})", ident, value))
         }
 
-        fn and(&mut self, ls: String, rs: String) -> String{
-            format!("({}&{})", ls, rs)
+        fn or(&mut self, ls: String, rs: String) -> Result<String, ()> {
+            Ok(format!("({}|{})", ls, rs))
         }
 
+        fn and(&mut self, ls: String, rs: String) -> Result<String, ()> {
+            Ok(format!("({}&{})", ls, rs))
+        }
     }
-    for token in Tokenizer::new(search){
+    for token in Tokenizer::new(search) {
         println!("{:#?}", token);
     }
     let mut visitor = VisitorTest::new();

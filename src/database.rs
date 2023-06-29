@@ -3,6 +3,7 @@ use std::str::Chars;
 use diesel::sql_types::TimestamptzSqlite;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
+use rocket::form::Form;
 use rocket::response::{status::Created, Debug};
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{Build, Rocket};
@@ -11,7 +12,7 @@ use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
-use crate::qurry_builder::ExpressionParser;
+use crate::qurry_builder::{ExpressionParser, ExpressionParserError};
 
 use self::diesel::prelude::*;
 
@@ -274,140 +275,136 @@ type DynTable = diesel_dynamic_schema::Table<String>;
 type DynExpr =
     Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
 
-#[get("/test/<search>")]
-async fn list_search(db: Db, search: Option<&str>) -> Result<Json<Vec<QCForm>>> {
+#[derive(Responder)]
+#[response(status = 500, content_type = "json")]
+enum QuerryError {
+    DieselError(Debug<diesel::result::Error>),
+    OtherError(Value),
+}
 
-    struct VisitorTest{
+type VisitorError = Value;
 
+struct VisitorTest {}
+impl VisitorTest {
+    pub fn new() -> Self {
+        Self {}
     }
-    impl VisitorTest{
-        pub fn new() -> Self{
-            Self{}
-        }
+}
+impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
+    fn eq(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+        dyn_qc_form_column!(
+            ident.as_str(),
+            column,
+            { Ok(Box::new(column.eq(value))) },
+            { todo!() },
+            { todo!() },
+            { todo!() }
+        )
     }
-    impl crate::qurry_builder::Visitor<DynExpr> for VisitorTest{
-        fn eq(&mut self, ident: String, value: String) -> DynExpr{
-            // format!("({}={:#?})", ident, value)
-            dyn_qc_form_column!(ident.as_str(), column, {
-                Box::new(column.eq(value))
-            }, {todo!()}, {todo!()}, {
-                todo!()   
-            })
-        }
-        fn lt(&mut self, ident: String, value: String) -> DynExpr{
-            dyn_qc_form_column!(ident.as_str(), column, {
-                Box::new(column.lt(value))
-            }, {todo!()}, {todo!()}, {
-                todo!()   
-            })
-        }
-        fn gt(&mut self, ident: String, value: String) -> DynExpr{
-            dyn_qc_form_column!(ident.as_str(), column, {
-                Box::new(column.gt(value))
-            }, {todo!()}, {todo!()}, {
-                todo!()   
-            })
-        }
-        fn colon(&mut self, ident: String, value: String) -> DynExpr{
-            dyn_qc_form_column!(ident.as_str(), column, {
-                Box::new(column.like(value))
-            }, {todo!()}, {todo!()}, {
-                todo!()   
-            })
-        }
-
-        fn or(&mut self, ls: DynExpr, rs: DynExpr) -> DynExpr{
-            Box::new(ls.or(rs))
-        }
-
-        fn and(&mut self, ls: DynExpr, rs: DynExpr) -> DynExpr{
-            Box::new(ls.and(rs))
-        }
-
+    fn lt(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+        dyn_qc_form_column!(
+            ident.as_str(),
+            column,
+            { Ok(Box::new(column.lt(value))) },
+            { todo!() },
+            { todo!() },
+            { todo!() }
+        )
+    }
+    fn gt(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+        dyn_qc_form_column!(
+            ident.as_str(),
+            column,
+            { Ok(Box::new(column.gt(value))) },
+            { todo!() },
+            { todo!() },
+            { todo!() }
+        )
+    }
+    fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+        dyn_qc_form_column!(
+            ident.as_str(),
+            column,
+            { Ok(Box::new(column.like(value))) },
+            { todo!() },
+            { todo!() },
+            { todo!() }
+        )
     }
 
+    fn or(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
+        Ok(Box::new(ls.or(rs)))
+    }
 
-    let mut boxed = qc_forms::table
-        .order_by(qc_forms::id.asc())
-        .limit(100)
-        .into_boxed();
+    fn and(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
+        Ok(Box::new(ls.and(rs)))
+    }
+}
+
+#[derive(FromForm)]
+struct SearchForm<'f> {
+    limit: Option<i64>,
+    search: Option<&'f str>,
+    order: Option<&'f str>,
+    ascending: Option<bool>,
+}
+
+#[post("/search", data = "<search>")]
+async fn list_search(
+    db: Db,
+    search: Form<SearchForm<'_>>,
+) -> std::result::Result<Json<Vec<QCForm>>, QuerryError> {
+    let mut boxed = if let Some(limit) = search.limit {
+        qc_forms::table.limit(limit).into_boxed()
+    } else {
+        qc_forms::table.into_boxed()
+    };
 
     let mut visitor = VisitorTest::new();
-    if let Some(search) = search{
-        let res = ExpressionParser::new(search, &mut visitor).parse();
-    
-        match res{
-            Ok(ok) => {
-                boxed = boxed.filter(ok);
+    'search: {
+        if let Some(search) = search.search {
+            if search.is_empty() || search.trim().is_empty() {
+                break 'search;
             }
-            Err(err) => {
-                todo!("{:#?}", err)
+            let res = ExpressionParser::new(search, &mut visitor).parse();
+
+            match res {
+                Ok(ok) => {
+                    boxed = boxed.filter(ok);
+                }
+                Err(err) => {
+                    return Err(QuerryError::OtherError(
+                        serde_json::to_value(err).unwrap_or_default(),
+                    ))
+                }
             }
         }
     }
-    // drop(expr);
-    // println!("{:#?}", res);
+    if let Some(order) = search.order{
+        dyn_qc_form_column!( order, column, {
+            
+            if search.ascending.unwrap_or(true){
+                boxed = boxed.order_by(column.asc())
+            }else{
+                boxed = boxed.order_by(column.desc())
+            }
+        }, {
+            return Err(QuerryError::OtherError(serde_json::json!({
+                "Error": format!("Invalid tabel selected for ordering: {}", order)
+            })))
+        });
+    }else{
+        boxed = if search.ascending.unwrap_or(true){
+            boxed.order_by(qc_forms::id.asc())
+        }else{
+            boxed.order_by(qc_forms::id.desc())
+        }
+    }
 
-
-    // let res: Box<
-    //     dyn BoxableExpression<
-    //         qc_forms::table,
-    //         Sqlite,
-    //         SqlType = diesel::expression::expression_types::NotSelectable,
-    //     >,
-    // > = dyn_qc_form_column!("test", column, { Box::new(column.asc()) }, { todo!() });
-
-
-    // use diesel_dynamic_schema::table;
-
-    // let bruh: diesel::sql_types::TimestamptzSqlite;
-
-    // let tabel = table("qc_forms");
-    // let comumn = tabel.column::<diesel::sql_types::Text, _>("processortype");
-
-    // // qc_forms::processortype.
-    // // let mut boxed_thing = Box::new(qc_forms::processorgen);
-    // // boxed_thing = Box::new(qc_forms::processortype);
-
-    // // boxed = boxed.filter(boxed_thing.like("other"));
-    // let res: Box<
-    //     dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>,
-    // > = Box::new(qc_forms::processortype.like("other"));
-
-    // boxed = boxed.filter(res);
-    // boxed = boxed.filter(qc_forms::processortype.like("other"));
-    // boxed = boxed.filter(qc_forms::salesorder.like("other"));
-    // boxed = boxed.filter(qc_forms::salesorder.like("other"));
-
-    // let fucked: DynExpr = Box::new(qc_forms::processortype.like("other"));
-    // let fucked_2 = Box::new(qc_forms::processortype.like("other"));
-    // let totally_fucked: DynExpr = Box::new(fucked.or(fucked_2));
-
-    // boxed = boxed.filter(totally_fucked);
-
-    // let kind = 1;
-    // let name = "";
-    // let table: diesel_dynamic_schema::Column<diesel_dynamic_schema::Table<qc_forms::table>, &str, diesel::sql_types::Text> = table(qc_forms::table).column::<diesel::sql_types::Text, _>("as");
-    // let stupid = match name{
-    //     "bruh" => {
-    //         qc_forms::assemblydate
-    //     },
-    //     _ => {
-    //         qc_forms::buildtype
-    //     }
-    // };
-    // // None?
-    // match kind {
-    //     0 => {
-    //         tabel
-    //     }
-
-    //     _ => {
-
-    //     }
-    // }carog
-
-    let qc_posts: Vec<QCForm> = db.run(move |conn| boxed.load(conn)).await?;
+    let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
+        Ok(ok) => ok,
+        Err(err) => return Err(QuerryError::DieselError(err.into())),
+    };
 
     Ok(qc_posts.into())
 }
