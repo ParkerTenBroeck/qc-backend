@@ -1,6 +1,3 @@
-use std::str::Chars;
-
-use diesel::sql_types::TimestamptzSqlite;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
@@ -10,32 +7,14 @@ use rocket::{Build, Rocket};
 
 use rocket_sync_db_pools::diesel;
 use serde_json::Value;
-use time::PrimitiveDateTime;
 
-use crate::qurry_builder::{ExpressionParser, ExpressionParserError};
+use crate::qurry_builder::{ExpressionParser};
 
 use self::diesel::prelude::*;
 
 #[database("diesel")]
 pub struct Db(diesel::SqliteConnection);
 
-impl Db {
-    pub async fn validate_user(&self, email: String, password: String) -> Option<i32> {
-        self.run(|db| {
-            user_accounts::table
-                .filter(
-                    user_accounts::email
-                        .eq(email)
-                        .and(user_accounts::password.eq(password)),
-                )
-                .select(user_accounts::id)
-                .first(db)
-                .ok()
-                .flatten()
-        })
-        .await
-    }
-}
 
 type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
@@ -271,7 +250,7 @@ async fn list(db: Db) -> Result<Json<Vec<QCForm>>> {
     Ok(qc_posts.into())
 }
 
-type DynTable = diesel_dynamic_schema::Table<String>;
+// type DynTable = diesel_dynamic_schema::Table<String>;
 type DynExpr =
     Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
 
@@ -298,7 +277,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.eq(value))) },
             { todo!() },
             { todo!() },
-            { todo!() }
+            {
+                Err(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
+                }))
+            }
         )
     }
     fn lt(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
@@ -308,7 +291,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.lt(value))) },
             { todo!() },
             { todo!() },
-            { todo!() }
+            {
+                Err(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
+                }))
+            }
         )
     }
     fn gt(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
@@ -318,7 +305,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.gt(value))) },
             { todo!() },
             { todo!() },
-            { todo!() }
+            {
+                Err(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
+                }))
+            }
         )
     }
     fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
@@ -328,7 +319,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.like(value))) },
             { todo!() },
             { todo!() },
-            { todo!() }
+            {
+                Err(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
+                }))
+            }
         )
     }
 
@@ -345,7 +340,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
 struct SearchForm<'f> {
     limit: Option<i64>,
     search: Option<&'f str>,
-    order: Option<&'f str>,
+    order_table: Option<&'f str>,
     ascending: Option<bool>,
 }
 
@@ -380,23 +375,27 @@ async fn list_search(
             }
         }
     }
-    if let Some(order) = search.order{
-        dyn_qc_form_column!( order, column, {
-            
-            if search.ascending.unwrap_or(true){
-                boxed = boxed.order_by(column.asc())
-            }else{
-                boxed = boxed.order_by(column.desc())
+    if let Some(order_table) = search.order_table {
+        dyn_qc_form_column!(
+            order_table,
+            column,
+            {
+                if search.ascending.unwrap_or(true) {
+                    boxed = boxed.order_by(column.asc())
+                } else {
+                    boxed = boxed.order_by(column.desc())
+                }
+            },
+            {
+                return Err(QuerryError::OtherError(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", order_table)
+                })));
             }
-        }, {
-            return Err(QuerryError::OtherError(serde_json::json!({
-                "Error": format!("Invalid tabel selected for ordering: {}", order)
-            })))
-        });
-    }else{
-        boxed = if search.ascending.unwrap_or(true){
+        );
+    } else {
+        boxed = if search.ascending.unwrap_or(true) {
             boxed.order_by(qc_forms::id.asc())
-        }else{
+        } else {
             boxed.order_by(qc_forms::id.desc())
         }
     }
