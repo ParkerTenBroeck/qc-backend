@@ -376,22 +376,24 @@ async fn list_search(
         }
     }
     if let Some(order_table) = search.order_table {
-        dyn_qc_form_column!(
-            order_table,
-            column,
-            {
-                if search.ascending.unwrap_or(true) {
-                    boxed = boxed.order_by(column.asc())
-                } else {
-                    boxed = boxed.order_by(column.desc())
+        if !order_table.trim().is_empty(){
+            dyn_qc_form_column!(
+                order_table.trim(),
+                column,
+                {
+                    if search.ascending.unwrap_or(true) {
+                        boxed = boxed.order_by(column.asc())
+                    } else {
+                        boxed = boxed.order_by(column.desc())
+                    }
+                },
+                {
+                    return Err(QuerryError::OtherError(serde_json::json!({
+                        "Error": format!("Invalid tabel selected for ordering: {}", order_table)
+                    })));
                 }
-            },
-            {
-                return Err(QuerryError::OtherError(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", order_table)
-                })));
-            }
-        );
+            );
+        }
     } else {
         boxed = if search.ascending.unwrap_or(true) {
             boxed.order_by(qc_forms::id.asc())

@@ -29,7 +29,7 @@ fn rocket() -> _ {
         // .attach(login_api::stage())
         // .attach(computer_api::stage())
         .attach(database::stage())
-        .mount("/", FileServer::new(relative!("static"), Options::DotFiles))
+        .mount("/", FileServer::new(relative!("static/RCT-FormBuilder"), Options::DotFiles))
     // .mount("/", routes![index])
     // .mount(
     //     "/",
