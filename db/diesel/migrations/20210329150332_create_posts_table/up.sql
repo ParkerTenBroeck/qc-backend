@@ -6,7 +6,7 @@ CREATE TABLE qc_forms (
     drivetype VARCHAR NOT NULL,
     itemserial VARCHAR NOT NULL,
     makemodel VARCHAR NOT NULL,
-    msoinstalled VARCHAR NOT NULL,
+    msoinstalled BOOLEAN NOT NULL,
     operatingsystem VARCHAR NOT NULL,
     processorgen VARCHAR NOT NULL,
     processortype VARCHAR NOT NULL,

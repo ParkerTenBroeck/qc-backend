@@ -22,3 +22,7 @@ serde = "1.0"
 [global]
 address = "0.0.0.0"
 port = 8000
+
+[dev-dependencies]
+rand = "0.5"
+rand_derive = "0.5"

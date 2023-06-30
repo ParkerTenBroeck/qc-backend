@@ -363,7 +363,7 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
             if tok_matches!(self.tokenizer.peek(), Token::And) {
                 self.tokenizer.next();
                 let rs = self.parse_1()?;
-                ls = unwrap_visitor!(self.visitor.or(ls, rs));
+                ls = unwrap_visitor!(self.visitor.and(ls, rs));
             } else {
                 return Ok(ls);
             }

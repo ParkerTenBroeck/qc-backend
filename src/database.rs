@@ -10,7 +10,7 @@ use rocket::{Build, Rocket};
 use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 
-use crate::qurry_builder::{ExpressionParser};
+use crate::qurry_builder::ExpressionParser;
 
 use self::diesel::prelude::*;
 
@@ -19,10 +19,7 @@ use crate::schema::*;
 #[database("diesel")]
 pub struct Db(diesel::SqliteConnection);
 
-
 type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
-
-
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
@@ -38,7 +35,7 @@ struct QCForm {
     drivetype: String,
     itemserial: String,
     makemodel: String,
-    msoinstalled: String,
+    msoinstalled: bool,
     operatingsystem: String,
     processorgen: String,
     processortype: String,
@@ -58,12 +55,11 @@ fn time_default() -> time::OffsetDateTime {
     time::OffsetDateTime::now_utc()
 }
 
-
 macro_rules! dyn_qc_form_column {
     ($column:expr, $ident:ident, $succ:block, $fail:block) => {
-        dyn_qc_form_column!($column, $ident, $succ, $succ, $succ, $fail)
+        dyn_qc_form_column!($column, $ident, $succ, $succ, $succ, $succ, $fail)
     };
-    ($column:expr, $ident:ident, $succ:block, $succ_id:block, $succ_date:block, $fail:block) => {
+    ($column:expr, $ident:ident, $succ_text:block, $succ_id:block, $succ_date:block, $succ_bool:block, $fail:block) => {
         match $column {
             "id" => {
                 let $ident = qc_forms::id;
@@ -75,76 +71,75 @@ macro_rules! dyn_qc_form_column {
             }
             "buildlocation" => {
                 let $ident = qc_forms::buildlocation;
-                $succ
+                $succ_text
             }
             "buildtype" => {
                 let $ident = qc_forms::buildtype;
-                $succ
+                $succ_text
             }
             "drivetype" => {
                 let $ident = qc_forms::drivetype;
-                $succ
+                $succ_text
             }
             "itemserial" => {
                 let $ident = qc_forms::itemserial;
-                $succ
+                $succ_text
             }
             "makemodel" => {
                 let $ident = qc_forms::makemodel;
-                $succ
+                $succ_text
             }
             "msoinstalled" => {
                 let $ident = qc_forms::msoinstalled;
-                $succ
+                $succ_bool
             }
             "operatingsystem" => {
                 let $ident = qc_forms::operatingsystem;
-                $succ
+                $succ_text
             }
             "processorgen" => {
                 let $ident = qc_forms::processorgen;
-                $succ
+                $succ_text
             }
             "processortype" => {
                 let $ident = qc_forms::processortype;
-                $succ
+                $succ_text
             }
             "qc1" => {
                 let $ident = qc_forms::qc1;
-                $succ
+                $succ_text
             }
             "qc1initial" => {
                 let $ident = qc_forms::qc1initial;
-                $succ
+                $succ_text
             }
             "qc2" => {
                 let $ident = qc_forms::qc2;
-                $succ
+                $succ_text
             }
             "qc2initial" => {
                 let $ident = qc_forms::qc2initial;
-                $succ
+                $succ_text
             }
-
             "ramsize" => {
                 let $ident = qc_forms::ramsize;
-                $succ
+                $succ_text
             }
             "ramtype" => {
                 let $ident = qc_forms::ramtype;
-                $succ
+                $succ_text
             }
             "rctpackage" => {
                 let $ident = qc_forms::rctpackage;
-                $succ
+                $succ_text
             }
             "salesorder" => {
                 let $ident = qc_forms::salesorder;
-                $succ
+                $succ_text
             }
             "technotes" => {
                 let $ident = qc_forms::technotes;
-                $succ
+                $succ_text
             }
             _ => $fail,
         }
@@ -206,6 +201,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.eq(value))) },
             { todo!() },
             { todo!() },
+            { todo!() },
             {
                 Err(serde_json::json!({
                     "Error": format!("Invalid tabel selected for ordering: {}", ident)
@@ -218,6 +214,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             column,
             { Ok(Box::new(column.lt(value))) },
+            { todo!() },
             { todo!() },
             { todo!() },
             {
@@ -234,6 +231,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.gt(value))) },
             { todo!() },
             { todo!() },
+            { todo!() },
             {
                 Err(serde_json::json!({
                     "Error": format!("Invalid tabel selected for ordering: {}", ident)
@@ -246,6 +244,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             column,
             { Ok(Box::new(column.like(value))) },
+            { todo!() },
             { todo!() },
             { todo!() },
             {
@@ -305,7 +304,7 @@ async fn list_search(
         }
     }
     if let Some(order_table) = search.order_table {
-        if !order_table.trim().is_empty(){
+        if !order_table.trim().is_empty() {
             dyn_qc_form_column!(
                 order_table.trim(),
                 column,
@@ -347,7 +346,6 @@ async fn read(db: Db, id: i32) -> Option<Json<QCForm>> {
         .ok()
 }
 
-
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
@@ -370,9 +368,201 @@ pub fn stage() -> AdHoc {
         rocket
             .attach(Db::fairing())
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
-            .mount(
-                "/api",
-                routes![list, read, create, list_search],
-            )
+            .mount("/api", routes![list, read, create, list_search])
     })
+}
+
+mod tests {
+    use diesel::RunQueryDsl;
+    use rocket::{http::Status, local::blocking::Client};
+    use time::OffsetDateTime;
+
+    use crate::{
+        database::QCForm,
+        schema::qc_forms::{self, drivetype},
+    };
+
+    use super::Db;
+
+    type Result<T, E = rocket::response::Debug<diesel::result::Error>> = std::result::Result<T, E>;
+
+    #[delete("/")]
+    async fn destroy(db: Db) -> Result<()> {
+        db.run(move |conn| diesel::delete(qc_forms::table).execute(conn))
+            .await?;
+        Ok(())
+    }
+
+    #[test]
+    fn fuzz_data() {
+        #[derive(Debug, Rand)]
+        enum BuildType {
+            Laptop,
+            Desktop_Mini,
+            Desktop_Micro,
+            Desktop_Standard,
+        }
+
+        #[derive(Debug, Rand)]
+        enum Location {
+            NIA,
+            MIA,
+        }
+
+        #[derive(Debug, Rand)]
+        enum DriveType {
+            SSD,
+            M2,
+            NVMe,
+            HDD,
+        }
+
+        #[derive(Debug, Rand)]
+        enum OsInstalled {
+            Linux,
+            Windows10,
+            Windows11,
+            ChromOs,
+            Android,
+        }
+
+        #[derive(Debug, Rand)]
+        enum ProcessorType {
+            Corei5,
+            Corei3,
+            Corei7,
+            Corei9,
+        }
+
+        #[derive(Debug, Rand)]
+        enum Initial {
+            PT,
+            CC,
+            HQ,
+            MA,
+            LP,
+            FH,
+        }
+
+        #[derive(Debug, Rand)]
+        enum RamType {
+            DDR2,
+            DDR3,
+            DDR4,
+            DDR5,
+        }
+
+        #[derive(Debug, Rand)]
+        enum RamSize {
+            GB1,
+            GB2,
+            GB4,
+            GB8,
+            GB16,
+            GB32,
+            GB64,
+        }
+
+        #[derive(Debug, Rand, Copy, Clone)]
+        enum SerialStart {
+            SHID = 0,
+            UHEHD = 1,
+            UHLTM2 = 2,
+            UHLTHD = 3,
+            UHLTNV = 4,
+            SLOD = 5,
+            SLOL = 6,
+        }
+
+        #[derive(Debug, Rand, Copy, Clone)]
+        enum RCTPackage {
+            LT_300U,
+            LT_200U,
+            LT_100U,
+            DT_100U,
+            DT_200U,
+            DT_300U,
+            DT_400U,
+        }
+
+        #[derive(Debug, Rand, Copy, Clone)]
+        enum SalesOrder {
+            CFS,
+            OTR,
+        }
+
+        #[derive(Debug, Rand, Copy, Clone)]
+        enum MakeModel {
+            DELL_200,
+            DELL_201,
+            DELL_300,
+            DELL_400,
+            HP_1,
+            HP_2,
+            HP_3,
+            HP_4,
+            HP_9,
+            HP_99,
+        }
+
+        let mut ids = [1u64; 7];
+
+        use rand::{distributions::Standard, rngs::ThreadRng, Rng};
+        use rand_derive::Rand;
+
+        let rocket = rocket::build()
+            .attach(super::stage())
+            .mount("/api", routes![destroy]);
+        let client = Client::tracked(rocket).unwrap();
+        assert_eq!(client.delete("/api").dispatch().status(), Status::Ok);
+
+        let mut rng = rand::thread_rng();
+        let rng = &mut rng;
+        for _ in 0..5000 {
+            fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
+            where
+                Standard: rand::prelude::Distribution<T>,
+            {
+                format!("{:?}", rng.gen::<T>())
+            }
+
+            let form = QCForm {
+                id: None,
+                assemblydate: OffsetDateTime::from_unix_timestamp(rng.gen_range(
+                    time::Date::MIN.midnight().assume_utc().unix_timestamp(),
+                    time::Date::MAX.midnight().assume_utc().unix_timestamp(),
+                ))
+                .unwrap(),
+                buildlocation: random_str::<Location>(rng),
+                buildtype: random_str::<BuildType>(rng),
+                drivetype: random_str::<DriveType>(rng),
+                itemserial: {
+                    let kind = rng.gen::<SerialStart>();
+                    let range = if rng.gen_range(0.0, 1.0) < 0.1 {
+                        rng.gen_range(1, 100)
+                    } else {
+                        1
+                    };
+                    ids[kind as usize] += range;
+                    format!("{:?}-{:80}", kind, ids[kind as usize])
+                },
+                makemodel: random_str::<MakeModel>(rng),
+                msoinstalled: rng.gen::<bool>(),
+                operatingsystem: random_str::<OsInstalled>(rng),
+                processorgen: format!("{}", rng.gen_range(1, 14)),
+                processortype: random_str::<ProcessorType>(rng),
+                qc1: String::new(),
+                qc1initial: random_str::<Initial>(rng),
+                qc2: String::new(),
+                qc2initial: random_str::<Initial>(rng),
+                ramsize: random_str::<RamSize>(rng),
+                ramtype: random_str::<RamType>(rng),
+                rctpackage: random_str::<RCTPackage>(rng),
+                salesorder: random_str::<SalesOrder>(rng),
+                technotes: "".into(),
+            };
+
+            assert_eq!(client.post("/api").json(&form).dispatch().status(), Status::Created);
+        }
+    }
 }
