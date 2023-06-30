@@ -338,6 +338,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
 #[derive(FromForm)]
 struct SearchForm<'f> {
     limit: Option<i64>,
+    offset: Option<i64>,
     search: Option<&'f str>,
     order_table: Option<&'f str>,
     ascending: Option<bool>,
@@ -349,7 +350,11 @@ async fn list_search(
     search: Form<SearchForm<'_>>,
 ) -> std::result::Result<Json<Vec<QCForm>>, QuerryError> {
     let mut boxed = if let Some(limit) = search.limit {
-        qc_forms::table.limit(limit).into_boxed()
+        if let Some(offset) = search.offset{
+            qc_forms::table.limit(limit).offset(offset).into_boxed()
+        }else{
+            qc_forms::table.limit(limit).into_boxed()
+        }
     } else {
         qc_forms::table.into_boxed()
     };
