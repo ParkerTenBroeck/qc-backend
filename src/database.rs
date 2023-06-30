@@ -1,6 +1,7 @@
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
+use rocket::response::status::Accepted;
 use rocket::response::{status::Created, Debug};
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{Build, Rocket};
@@ -24,7 +25,7 @@ fn time_default() -> Time {
     Time(time::OffsetDateTime::now_utc())
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = crate::schema::qc_forms)]
 struct QCForm {
@@ -142,25 +143,6 @@ macro_rules! dyn_qc_form_column {
             _ => $fail,
         }
     };
-}
-
-#[post("/", data = "<post>")]
-async fn create(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
-    let post_value = post.clone();
-    db.run(move |conn| {
-        diesel::insert_into(qc_forms::table)
-            .values(&*post_value)
-            .execute(conn)
-    })
-    .await?;
-    Ok(Created::new("/").body(post))
-}
-
-#[get("/")]
-async fn list(db: Db) -> Result<Json<Vec<QCForm>>> {
-    let qc_posts: Vec<QCForm> = db.run(move |conn| qc_forms::table.load(conn)).await?;
-
-    Ok(qc_posts.into())
 }
 
 // type DynTable = diesel_dynamic_schema::Table<String>;
@@ -345,7 +327,7 @@ struct SearchForm<'f> {
 }
 
 #[post("/search", data = "<search>")]
-async fn list_search(
+async fn search(
     db: Db,
     search: Form<SearchForm<'_>>,
 ) -> std::result::Result<Json<Vec<QCForm>>, QuerryError> {
@@ -417,12 +399,24 @@ async fn list_search(
     Ok(qc_posts.into())
 }
 
-#[get("/<id>")]
-async fn read(db: Db, id: i32) -> Option<Json<QCForm>> {
+#[get("/get_post/<id>")]
+async fn get_post(db: Db, id: i32) -> Option<Json<QCForm>> {
     db.run(move |conn| qc_forms::table.filter(qc_forms::id.eq(id)).first(conn))
         .await
         .map(Json)
         .ok()
+}
+
+#[post("/new_post", data = "<post>")]
+async fn new_post(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
+    let post_value = post.clone();
+    db.run(move |conn| {
+        diesel::insert_into(qc_forms::table)
+            .values(&*post_value)
+            .execute(conn)
+    })
+    .await?;
+    Ok(Created::new("/").body(post))
 }
 
 #[get("/timetest/<time>")]
@@ -430,6 +424,29 @@ async fn timetest(time: String) -> Result<String, String> {
     let time: Time = serde_json::from_str(&time).map_err(|f| format!("{:#?}", f))?;
     let time: String = serde_json::to_string(&time).map_err(|f| format!("{:#?}", f))?;
     Ok(time)
+}
+
+
+#[post("/overwrite_post", data = "<post>")]
+async fn overwrite_post(db: Db, post: Json<QCForm>) -> Result<Accepted<Json<QCForm>>> {
+    let post_value = post.clone();
+    db.run(move |conn| {
+        diesel::update(qc_forms::table.filter(qc_forms::id.eq(post_value.id)))
+            .set(&*post_value)
+            .execute(conn)
+    })
+    .await?;
+    Ok(Accepted(Some(post)))
+}
+
+
+pub fn stage() -> AdHoc {
+    AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
+        rocket
+            .attach(Db::fairing())
+            .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
+            .mount("/api", routes![get_post, new_post, overwrite_post, search, timetest])
+    })
 }
 
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
@@ -449,14 +466,6 @@ async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
 }
 
-pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
-        rocket
-            .attach(Db::fairing())
-            .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
-            .mount("/api", routes![list, read, create, list_search, timetest])
-    })
-}
 
 #[allow(warnings)]
 mod tests {
