@@ -61,6 +61,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                         '*' => ret = Some(Token::Star),
                         '^' => ret = Some(Token::Carrot),
                         ':' => ret = Some(Token::Colon),
+                        '!' => ret = Some(Token::Bang),
                         ';' => ret = Some(Token::Semicolon),
                         '"' => {
                             state = TokenizerState::String;
@@ -95,7 +96,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     }
                 }
                 TokenizerState::Ident => {
-                    if char.is_alphabetic() {
+                    if char.is_alphanumeric() {
                         self.chars.next();
                         current.byte_index += char.len_utf8();
                         current.char_index += 1;
@@ -182,6 +183,7 @@ pub enum Token {
     Semicolon,
     Carrot,
     Star,
+    Bang,
     Eq,
     Ident(String),
     Value(String),
@@ -238,6 +240,7 @@ pub trait Visitor<T, E> {
 
     fn or(&mut self, ls: T, rs: T) -> Result<T, E>;
     fn and(&mut self, ls: T, rs: T) -> Result<T, E>;
+    fn not(&mut self, expr: T) -> Result<T, E>;
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -386,6 +389,9 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
             return Ok(unwrap_visitor!(self
                 .visitor
                 .between(low_value, ident, high_value)));
+        }else if tok.data == Token::Bang{
+            let expr = self.parse_top()?;
+            return Ok(unwrap_visitor!(self.visitor.not(expr)));
         }
         let ident = expect_ident!(tok);
 
@@ -453,6 +459,9 @@ fn test_parser() {
 
         fn and(&mut self, ls: String, rs: String) -> Result<String, ()> {
             Ok(format!("({}&{})", ls, rs))
+        }
+        fn not(&mut self, expr: String) -> Result<String, ()> {
+            Ok(format!("(!({}))", expr))
         }
     }
     for token in Tokenizer::new(search) {

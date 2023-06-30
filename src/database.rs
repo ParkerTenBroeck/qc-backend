@@ -9,6 +9,7 @@ use rocket::{Build, Rocket};
 use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 
+use crate::qc_checklist::QCChecklist;
 use crate::qurry_builder::ExpressionParser;
 use crate::time::Time;
 
@@ -42,9 +43,9 @@ struct QCForm {
     operatingsystem: String,
     processorgen: String,
     processortype: String,
-    qc1: String,
+    qc1: QCChecklist,
     qc1initial: String,
-    qc2: String,
+    qc2: QCChecklist,
     qc2initial: String,
 
     ramsize: String,
@@ -315,6 +316,10 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     fn and(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
         Ok(Box::new(ls.and(rs)))
     }
+
+    fn not(&mut self, expr: DynExpr) -> std::result::Result<DynExpr, VisitorError> {
+        Ok(Box::new(expr.eq(false)))
+    }
 }
 
 #[derive(FromForm)]
@@ -469,13 +474,15 @@ async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
 
 #[allow(warnings)]
 mod tests {
+    use std::collections::HashMap;
+
     use diesel::RunQueryDsl;
     use rocket::{http::Status, local::blocking::Client};
     use time::OffsetDateTime;
 
     use crate::{
         database::{QCForm, Time},
-        schema::qc_forms::{self, drivetype},
+        schema::qc_forms::{self, drivetype}, qc_checklist::QCChecklist,
     };
 
     use super::Db;
@@ -601,6 +608,17 @@ mod tests {
             HP_99,
         }
 
+        let check_ids = [
+            "bios_pass",
+            "usb_posts",
+            "bios_reset",
+            "keybaord_mouse",
+            "case",
+            "cd_dvd_drive",
+            "device_manager",
+            "image_loaded",
+        ];
+
         let mut ids = [1u64; 7];
 
         use rand::{distributions::Standard, rngs::ThreadRng, Rng};
@@ -614,7 +632,7 @@ mod tests {
 
         let mut rng = rand::thread_rng();
         let rng = &mut rng;
-        for _ in 0..5000 {
+        for _ in 0..50000 {
             fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
             where
                 Standard: rand::prelude::Distribution<T>,
@@ -649,9 +667,21 @@ mod tests {
                 operatingsystem: random_str::<OsInstalled>(rng),
                 processorgen: format!("{}", rng.gen_range(1, 14)),
                 processortype: random_str::<ProcessorType>(rng),
-                qc1: String::new(),
+                qc1: {
+                    let mut checks = QCChecklist::new();
+                    for check in check_ids{
+                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                    }
+                    checks
+                },
                 qc1initial: random_str::<Initial>(rng),
-                qc2: String::new(),
+                qc2: {
+                    let mut checks = QCChecklist::new();
+                    for check in check_ids{
+                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                    }
+                    checks
+                },
                 qc2initial: random_str::<Initial>(rng),
                 ramsize: random_str::<RamSize>(rng),
                 ramtype: random_str::<RamType>(rng),
@@ -661,7 +691,7 @@ mod tests {
             };
 
             assert_eq!(
-                client.post("/api").json(&form).dispatch().status(),
+                client.post("/api/new_post").json(&form).dispatch().status(),
                 Status::Created
             );
         }

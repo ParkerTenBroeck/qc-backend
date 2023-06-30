@@ -5,17 +5,13 @@ extern crate rocket;
 #[macro_use]
 extern crate rocket_sync_db_pools;
 
-// #[get("/")]
-// fn index() -> Redirect {
-//     Redirect::to(uri!(login_api::login_page))
-// }
-
 use rocket_dyn_templates::Template;
 
 pub mod database;
 pub mod qurry_builder;
 pub mod schema;
 pub mod time;
+pub mod qc_checklist;
 
 #[launch]
 fn rocket() -> _ {
