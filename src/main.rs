@@ -18,6 +18,7 @@ use rocket_dyn_templates::Template;
 pub mod database;
 pub mod qurry_builder;
 pub mod schema;
+pub mod time;
 
 #[launch]
 fn rocket() -> _ {
@@ -32,7 +33,7 @@ fn rocket() -> _ {
         .attach(database::stage())
         .mount(
             "/",
-            FileServer::new(relative!("static/RCT-FormBuilder"), Options::DotFiles),
+            FileServer::new("./static/RCT-FormBuilder", Options::DotFiles),
         )
     // .mount("/", routes![index])
     // .mount(

@@ -722,10 +722,11 @@ checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.26.0"
+version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afc22eff61b133b115c6e8c74e818c628d6d5e7a502afea6f64dee076dd94326"
+checksum = "29f835d03d717946d28b1d1ed632eb6f0e24a299388ee623d0c23118d3e8a7fa"
 dependencies = [
+ "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -1067,6 +1068,7 @@ dependencies = [
  "diesel",
  "diesel-dynamic-schema",
  "diesel_migrations",
+ "libsqlite3-sys",
  "rand 0.5.6",
  "rand_derive",
  "rocket",

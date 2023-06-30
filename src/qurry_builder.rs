@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub struct TokenizerPosition {
@@ -234,6 +234,7 @@ pub trait Visitor<T, E> {
     fn lt(&mut self, ident: String, value: String) -> Result<T, E>;
     fn gt(&mut self, ident: String, value: String) -> Result<T, E>;
     fn colon(&mut self, ident: String, value: String) -> Result<T, E>;
+    fn between(&mut self, low_value: String, ident: String, high_value: String) -> Result<T, E>;
 
     fn or(&mut self, ls: T, rs: T) -> Result<T, E>;
     fn and(&mut self, ls: T, rs: T) -> Result<T, E>;
@@ -372,10 +373,19 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
 
     fn parse_1(&mut self) -> Result<T, ExpressionParserError<E>> {
         let tok = unwrap_token!(self.tokenizer.next());
+
         if tok.data == Token::LPar {
             let expr = self.parse_top();
             expect_tok!(unwrap_token!(self.tokenizer.next()), Token::RPar);
             return expr;
+        } else if let Token::Value(low_value) = tok.data {
+            expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
+            let ident = expect_ident!(unwrap_token!(self.tokenizer.next()));
+            expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
+            let high_value = expect_value!(unwrap_token!(self.tokenizer.next()));
+            return Ok(unwrap_visitor!(self
+                .visitor
+                .between(low_value, ident, high_value)));
         }
         let ident = expect_ident!(tok);
 
@@ -406,6 +416,7 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
     }
 }
 
+
 #[test]
 fn test_parser() {
     let search = "(hello:\"lol\" | two > \"2\")";
@@ -427,6 +438,14 @@ fn test_parser() {
         }
         fn colon(&mut self, ident: String, value: String) -> Result<String, ()> {
             Ok(format!("({}:{:#?})", ident, value))
+        }
+        fn between(
+            &mut self,
+            low_value: String,
+            ident: String,
+            high_value: String,
+        ) -> Result<String, ()> {
+            Ok(format!("({:#?}<{}<{:#?})", low_value, ident, high_value))
         }
 
         fn or(&mut self, ls: String, rs: String) -> Result<String, ()> {

@@ -3,13 +3,13 @@
 diesel::table! {
     qc_forms (id) {
         id -> Nullable<Integer>,
-        assemblydate -> Timestamp,
+        assemblydate -> TimestamptzSqlite,
         buildlocation -> Text,
         buildtype -> Text,
         drivetype -> Text,
         itemserial -> Text,
         makemodel -> Text,
-        msoinstalled -> Text,
+        msoinstalled -> Bool,
         operatingsystem -> Text,
         processorgen -> Text,
         processortype -> Text,

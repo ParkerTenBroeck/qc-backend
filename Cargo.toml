@@ -17,6 +17,8 @@ diesel_migrations = "2.0"
 
 time = {version = "0.3", features = ["serde"]}
 
+libsqlite3-sys = { version = "0.25", features = ["bundled"] }
+
 serde = "1.0"
 
 [global]

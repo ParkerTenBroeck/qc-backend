@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use diesel::AsExpression;
+use diesel::deserialize::FromSqlRow;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
@@ -11,6 +13,7 @@ use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 
 use crate::qurry_builder::ExpressionParser;
+use crate::time::Time;
 
 use self::diesel::prelude::*;
 
@@ -21,15 +24,19 @@ pub struct Db(diesel::SqliteConnection);
 
 type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
+fn time_default() -> Time {
+    Time(time::OffsetDateTime::now_utc())
+}
+
+
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = crate::schema::qc_forms)]
 struct QCForm {
     #[serde(skip_deserializing)]
     id: Option<i32>,
-    #[serde(with = "time::serde::iso8601")]
     #[serde(default = "time_default")]
-    assemblydate: time::OffsetDateTime,
+    assemblydate: Time,
     buildlocation: String,
     buildtype: String,
     drivetype: String,
@@ -49,10 +56,6 @@ struct QCForm {
     rctpackage: String,
     salesorder: String,
     technotes: String,
-}
-
-fn time_default() -> time::OffsetDateTime {
-    time::OffsetDateTime::now_utc()
 }
 
 macro_rules! dyn_qc_form_column {
@@ -158,15 +161,6 @@ async fn create(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
     Ok(Created::new("/").body(post))
 }
 
-// #[get("/")]
-// async fn list(db: Db) -> Result<Json<Vec<Option<i32>>>> {
-//     let ids: Vec<Option<i32>> = db
-//         .run(move |conn| qc_forms::table.select(qc_forms::id).load(conn))
-//         .await?;
-
-//     Ok(Json(ids))
-// }
-
 #[get("/")]
 async fn list(db: Db) -> Result<Json<Vec<QCForm>>> {
     let qc_posts: Vec<QCForm> = db.run(move |conn| qc_forms::table.load(conn)).await?;
@@ -193,15 +187,37 @@ impl VisitorTest {
         Self {}
     }
 }
+
+macro_rules! unwrap_visitor_exression {
+    ($type:ty, $expr:expr) => {{
+        let val: $type = match serde_json::from_str(&$expr) {
+            Ok(ok) => ok,
+            Err(err) => return Err(serde_json::json!({ "Error": format!("{:?}", err) })),
+        };
+        val
+    }};
+}
+
 impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     fn eq(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
         dyn_qc_form_column!(
             ident.as_str(),
             column,
             { Ok(Box::new(column.eq(value))) },
-            { todo!() },
-            { todo!() },
-            { todo!() },
+            {
+                Ok(Box::new(
+                    column
+                        .eq(unwrap_visitor_exression!(i32, value))
+                        .assume_not_null(),
+                ))
+            },
+            {
+                Ok(Box::new(column.eq(unwrap_visitor_exression!(
+                    Time,
+                    value
+                ))))
+            },
+            { Ok(Box::new(column.eq(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
                     "Error": format!("Invalid tabel selected for ordering: {}", ident)
@@ -214,9 +230,20 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             column,
             { Ok(Box::new(column.lt(value))) },
-            { todo!() },
-            { todo!() },
-            { todo!() },
+            {
+                Ok(Box::new(
+                    column
+                        .lt(unwrap_visitor_exression!(i32, value))
+                        .assume_not_null(),
+                ))
+            },
+            {
+                Ok(Box::new(column.lt(unwrap_visitor_exression!(
+                    Time,
+                    value
+                ))))
+            },
+            { Ok(Box::new(column.lt(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
                     "Error": format!("Invalid tabel selected for ordering: {}", ident)
@@ -229,9 +256,20 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             column,
             { Ok(Box::new(column.gt(value))) },
-            { todo!() },
-            { todo!() },
-            { todo!() },
+            {
+                Ok(Box::new(
+                    column
+                        .gt(unwrap_visitor_exression!(i32, value))
+                        .assume_not_null(),
+                ))
+            },
+            {
+                Ok(Box::new(column.gt(unwrap_visitor_exression!(
+                    Time,
+                    value
+                ))))
+            },
+            { Ok(Box::new(column.gt(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
                     "Error": format!("Invalid tabel selected for ordering: {}", ident)
@@ -239,14 +277,67 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             }
         )
     }
+
+    fn between(
+        &mut self,
+        low_value: String,
+        ident: String,
+        high_value: String,
+    ) -> Result<DynExpr, VisitorError> {
+        dyn_qc_form_column!(
+            ident.as_str(),
+            column,
+            { Ok(Box::new(column.between(low_value, high_value))) },
+            {
+                Ok(Box::new(
+                    column
+                        .between(
+                            unwrap_visitor_exression!(i32, low_value),
+                            unwrap_visitor_exression!(i32, high_value),
+                        )
+                        .assume_not_null(),
+                ))
+            },
+            {
+                Ok(Box::new(column.between(
+                    unwrap_visitor_exression!(Time, low_value),
+                    unwrap_visitor_exression!(Time, high_value),
+                )))
+            },
+            {
+                Ok(Box::new(column.between(
+                    unwrap_visitor_exression!(bool, low_value),
+                    unwrap_visitor_exression!(bool, high_value),
+                )))
+            },
+            {
+                Err(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
+                }))
+            }
+        )
+    }
+
     fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
         dyn_qc_form_column!(
             ident.as_str(),
             column,
             { Ok(Box::new(column.like(value))) },
-            { todo!() },
-            { todo!() },
-            { todo!() },
+            {
+                Err(serde_json::json!({
+                    "Error": "Cannot use like operator with Option<i32> fields"
+                }))
+            },
+            {
+                Err(serde_json::json!({
+                    "Error": "Cannot use like operator with DateTime fields"
+                }))
+            },
+            {
+                Err(serde_json::json!({
+                    "Error": "Cannot use like operator with bool fields"
+                }))
+            },
             {
                 Err(serde_json::json!({
                     "Error": format!("Invalid tabel selected for ordering: {}", ident)
@@ -346,6 +437,13 @@ async fn read(db: Db, id: i32) -> Option<Json<QCForm>> {
         .ok()
 }
 
+#[get("/timetest/<time>")]
+async fn timetest(time: String) -> Result<String, String> {
+    let time: Time = serde_json::from_str(&time).map_err(|f|format!("{:#?}", f))?;
+    let time: String = serde_json::to_string(&time).map_err(|f|format!("{:#?}", f))?;
+    Ok(time)
+}
+
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
@@ -368,7 +466,7 @@ pub fn stage() -> AdHoc {
         rocket
             .attach(Db::fairing())
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
-            .mount("/api", routes![list, read, create, list_search])
+            .mount("/api", routes![list, read, create, list_search, timetest])
     })
 }
 
@@ -378,7 +476,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use crate::{
-        database::QCForm,
+        database::{QCForm, Time},
         schema::qc_forms::{self, drivetype},
     };
 
@@ -528,11 +626,11 @@ mod tests {
 
             let form = QCForm {
                 id: None,
-                assemblydate: OffsetDateTime::from_unix_timestamp(rng.gen_range(
+                assemblydate: Time(OffsetDateTime::from_unix_timestamp(rng.gen_range(
                     time::Date::MIN.midnight().assume_utc().unix_timestamp(),
                     time::Date::MAX.midnight().assume_utc().unix_timestamp(),
                 ))
-                .unwrap(),
+                .unwrap()),
                 buildlocation: random_str::<Location>(rng),
                 buildtype: random_str::<BuildType>(rng),
                 drivetype: random_str::<DriveType>(rng),
@@ -562,7 +660,10 @@ mod tests {
                 technotes: "".into(),
             };
 
-            assert_eq!(client.post("/api").json(&form).dispatch().status(), Status::Created);
+            assert_eq!(
+                client.post("/api").json(&form).dispatch().status(),
+                Status::Created
+            );
         }
     }
 }
