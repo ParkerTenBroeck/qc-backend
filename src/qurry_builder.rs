@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub struct TokenizerPosition {
@@ -415,7 +415,6 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
         }
     }
 }
-
 
 #[test]
 fn test_parser() {

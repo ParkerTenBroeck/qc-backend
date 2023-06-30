@@ -1,7 +1,4 @@
-use rocket::{
-    fs::{relative, FileServer, Options},
-    response::Redirect,
-};
+use rocket::fs::{FileServer, Options};
 
 #[macro_use]
 extern crate rocket;
@@ -23,7 +20,7 @@ pub mod time;
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .attach(Template::custom(|engins| {
+        .attach(Template::custom(|_engins| {
             // engins
             //     .handlebars
             //     .register_helper("string_escape", Box::new(helpers::string_escape));

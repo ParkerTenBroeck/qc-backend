@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-
-use diesel::AsExpression;
-use diesel::deserialize::FromSqlRow;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
@@ -27,7 +23,6 @@ type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 fn time_default() -> Time {
     Time(time::OffsetDateTime::now_utc())
 }
-
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable)]
 #[serde(crate = "rocket::serde")]
@@ -211,12 +206,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                         .assume_not_null(),
                 ))
             },
-            {
-                Ok(Box::new(column.eq(unwrap_visitor_exression!(
-                    Time,
-                    value
-                ))))
-            },
+            { Ok(Box::new(column.eq(unwrap_visitor_exression!(Time, value)))) },
             { Ok(Box::new(column.eq(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
@@ -237,12 +227,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                         .assume_not_null(),
                 ))
             },
-            {
-                Ok(Box::new(column.lt(unwrap_visitor_exression!(
-                    Time,
-                    value
-                ))))
-            },
+            { Ok(Box::new(column.lt(unwrap_visitor_exression!(Time, value)))) },
             { Ok(Box::new(column.lt(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
@@ -263,12 +248,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                         .assume_not_null(),
                 ))
             },
-            {
-                Ok(Box::new(column.gt(unwrap_visitor_exression!(
-                    Time,
-                    value
-                ))))
-            },
+            { Ok(Box::new(column.gt(unwrap_visitor_exression!(Time, value)))) },
             { Ok(Box::new(column.gt(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
@@ -321,8 +301,8 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
         dyn_qc_form_column!(
             ident.as_str(),
-            column,
-            { Ok(Box::new(column.like(value))) },
+            _column,
+            { Ok(Box::new(_column.like(value))) },
             {
                 Err(serde_json::json!({
                     "Error": "Cannot use like operator with Option<i32> fields"
@@ -439,8 +419,8 @@ async fn read(db: Db, id: i32) -> Option<Json<QCForm>> {
 
 #[get("/timetest/<time>")]
 async fn timetest(time: String) -> Result<String, String> {
-    let time: Time = serde_json::from_str(&time).map_err(|f|format!("{:#?}", f))?;
-    let time: String = serde_json::to_string(&time).map_err(|f|format!("{:#?}", f))?;
+    let time: Time = serde_json::from_str(&time).map_err(|f| format!("{:#?}", f))?;
+    let time: String = serde_json::to_string(&time).map_err(|f| format!("{:#?}", f))?;
     Ok(time)
 }
 
@@ -470,6 +450,7 @@ pub fn stage() -> AdHoc {
     })
 }
 
+#[allow(warnings)]
 mod tests {
     use diesel::RunQueryDsl;
     use rocket::{http::Status, local::blocking::Client};
@@ -626,11 +607,13 @@ mod tests {
 
             let form = QCForm {
                 id: None,
-                assemblydate: Time(OffsetDateTime::from_unix_timestamp(rng.gen_range(
-                    time::Date::MIN.midnight().assume_utc().unix_timestamp(),
-                    time::Date::MAX.midnight().assume_utc().unix_timestamp(),
-                ))
-                .unwrap()),
+                assemblydate: Time(
+                    OffsetDateTime::from_unix_timestamp(rng.gen_range(
+                        time::Date::MIN.midnight().assume_utc().unix_timestamp(),
+                        time::Date::MAX.midnight().assume_utc().unix_timestamp(),
+                    ))
+                    .unwrap(),
+                ),
                 buildlocation: random_str::<Location>(rng),
                 buildtype: random_str::<BuildType>(rng),
                 drivetype: random_str::<DriveType>(rng),
