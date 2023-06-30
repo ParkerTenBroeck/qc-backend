@@ -349,15 +349,8 @@ async fn list_search(
     db: Db,
     search: Form<SearchForm<'_>>,
 ) -> std::result::Result<Json<Vec<QCForm>>, QuerryError> {
-    let mut boxed = if let Some(limit) = search.limit {
-        if let Some(offset) = search.offset{
-            qc_forms::table.limit(limit).offset(offset).into_boxed()
-        }else{
-            qc_forms::table.limit(limit).into_boxed()
-        }
-    } else {
-        qc_forms::table.into_boxed()
-    };
+    let mut boxed = qc_forms::table.into_boxed();
+    
 
     let mut visitor = VisitorTest::new();
     'search: {
@@ -405,6 +398,16 @@ async fn list_search(
             boxed.order_by(qc_forms::id.desc())
         }
     }
+
+    if let Some(limit) = search.limit {
+        if let Some(offset) = search.offset{
+            boxed = boxed.limit(limit).offset(offset)
+        }else{
+            boxed = boxed.limit(limit)
+        }
+    }
+
+
 
     let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
