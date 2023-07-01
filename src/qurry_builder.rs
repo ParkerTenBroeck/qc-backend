@@ -389,7 +389,7 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
             return Ok(unwrap_visitor!(self
                 .visitor
                 .between(low_value, ident, high_value)));
-        }else if tok.data == Token::Bang{
+        } else if tok.data == Token::Bang {
             let expr = self.parse_top()?;
             return Ok(unwrap_visitor!(self.visitor.not(expr)));
         }

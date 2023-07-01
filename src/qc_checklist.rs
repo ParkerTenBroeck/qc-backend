@@ -6,7 +6,7 @@ use diesel::{
     deserialize::{FromSql, FromSqlRow},
     expression::AsExpression,
     serialize::ToSql,
-    sql_types::{Text},
+    sql_types::Text,
     sqlite::Sqlite,
 };
 
@@ -15,8 +15,8 @@ use diesel::{
 #[diesel(sql_type = diesel::sql_types::Text)]
 pub struct QCChecklist(pub HashMap<String, u8>);
 
-impl QCChecklist{
-    pub fn new() -> Self{
+impl QCChecklist {
+    pub fn new() -> Self {
         Self(HashMap::new())
     }
 }

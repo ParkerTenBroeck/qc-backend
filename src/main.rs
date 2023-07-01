@@ -8,10 +8,10 @@ extern crate rocket_sync_db_pools;
 use rocket_dyn_templates::Template;
 
 pub mod database;
+pub mod qc_checklist;
 pub mod qurry_builder;
 pub mod schema;
 pub mod time;
-pub mod qc_checklist;
 
 #[launch]
 fn rocket() -> _ {

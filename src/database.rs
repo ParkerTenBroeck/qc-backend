@@ -337,7 +337,6 @@ async fn search(
     search: Form<SearchForm<'_>>,
 ) -> std::result::Result<Json<Vec<QCForm>>, QuerryError> {
     let mut boxed = qc_forms::table.into_boxed();
-    
 
     let mut visitor = VisitorTest::new();
     'search: {
@@ -387,14 +386,12 @@ async fn search(
     }
 
     if let Some(limit) = search.limit {
-        if let Some(offset) = search.offset{
+        if let Some(offset) = search.offset {
             boxed = boxed.limit(limit).offset(offset)
-        }else{
+        } else {
             boxed = boxed.limit(limit)
         }
     }
-
-
 
     let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
@@ -431,7 +428,6 @@ async fn timetest(time: String) -> Result<String, String> {
     Ok(time)
 }
 
-
 #[post("/overwrite_post", data = "<post>")]
 async fn overwrite_post(db: Db, post: Json<QCForm>) -> Result<Accepted<Json<QCForm>>> {
     let post_value = post.clone();
@@ -444,13 +440,15 @@ async fn overwrite_post(db: Db, post: Json<QCForm>) -> Result<Accepted<Json<QCFo
     Ok(Accepted(Some(post)))
 }
 
-
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
         rocket
             .attach(Db::fairing())
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
-            .mount("/api", routes![get_post, new_post, overwrite_post, search, timetest])
+            .mount(
+                "/api",
+                routes![get_post, new_post, overwrite_post, search, timetest],
+            )
     })
 }
 
@@ -471,7 +469,6 @@ async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
 }
 
-
 #[allow(warnings)]
 mod tests {
     use std::collections::HashMap;
@@ -482,7 +479,8 @@ mod tests {
 
     use crate::{
         database::{QCForm, Time},
-        schema::qc_forms::{self, drivetype}, qc_checklist::QCChecklist,
+        qc_checklist::QCChecklist,
+        schema::qc_forms::{self, drivetype},
     };
 
     use super::Db;
@@ -669,7 +667,7 @@ mod tests {
                 processortype: random_str::<ProcessorType>(rng),
                 qc1: {
                     let mut checks = QCChecklist::new();
-                    for check in check_ids{
+                    for check in check_ids {
                         checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
                     }
                     checks
@@ -677,7 +675,7 @@ mod tests {
                 qc1initial: random_str::<Initial>(rng),
                 qc2: {
                     let mut checks = QCChecklist::new();
-                    for check in check_ids{
+                    for check in check_ids {
                         checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
                     }
                     checks
