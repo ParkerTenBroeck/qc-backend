@@ -378,9 +378,9 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
         let tok = unwrap_token!(self.tokenizer.next());
 
         if tok.data == Token::LPar {
-            let expr = self.parse_top();
+            let expr = self.parse_top()?;
             expect_tok!(unwrap_token!(self.tokenizer.next()), Token::RPar);
-            return expr;
+            return Ok(expr);
         } else if let Token::Value(low_value) = tok.data {
             expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
             let ident = expect_ident!(unwrap_token!(self.tokenizer.next()));
@@ -390,7 +390,7 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
                 .visitor
                 .between(low_value, ident, high_value)));
         } else if tok.data == Token::Bang {
-            let expr = self.parse_top()?;
+            let expr = self.parse_1()?;
             return Ok(unwrap_visitor!(self.visitor.not(expr)));
         }
         let ident = expect_ident!(tok);

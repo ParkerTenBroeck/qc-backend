@@ -247,6 +247,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
         ident: String,
         high_value: String,
     ) -> Result<DynExpr, VisitorError> {
+        
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -322,7 +323,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     }
 }
 
-#[derive(FromForm)]
+#[derive(FromForm, Debug)]
 struct SearchForm<'f> {
     limit: Option<i64>,
     offset: Option<i64>,
@@ -358,31 +359,29 @@ async fn search(
             }
         }
     }
-    if let Some(order_table) = search.order_table {
+    {
+        let mut order_table = search.order_table.unwrap_or("id");
+
         if !order_table.trim().is_empty() {
-            dyn_qc_form_column!(
-                order_table.trim(),
-                column,
-                {
-                    if search.ascending.unwrap_or(true) {
-                        boxed = boxed.order_by(column.asc())
-                    } else {
-                        boxed = boxed.order_by(column.desc())
-                    }
-                },
-                {
-                    return Err(QuerryError::OtherError(serde_json::json!({
-                        "Error": format!("Invalid tabel selected for ordering: {}", order_table)
-                    })));
+            order_table = "id";
+        }
+
+        dyn_qc_form_column!(
+            order_table.trim(),
+            column,
+            {
+                if search.ascending.unwrap_or(true) {
+                    boxed = boxed.order_by(column.asc())
+                } else {
+                    boxed = boxed.order_by(column.desc())
                 }
-            );
-        }
-    } else {
-        boxed = if search.ascending.unwrap_or(true) {
-            boxed.order_by(qc_forms::id.asc())
-        } else {
-            boxed.order_by(qc_forms::id.desc())
-        }
+            },
+            {
+                return Err(QuerryError::OtherError(serde_json::json!({
+                    "Error": format!("Invalid tabel selected for ordering: {}", order_table)
+                })));
+            }
+        );
     }
 
     if let Some(limit) = search.limit {
@@ -392,6 +391,7 @@ async fn search(
             boxed = boxed.limit(limit)
         }
     }
+    
 
     let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
@@ -630,7 +630,7 @@ mod tests {
 
         let mut rng = rand::thread_rng();
         let rng = &mut rng;
-        for _ in 0..50000 {
+        for _ in 0..500000 {
             fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
             where
                 Standard: rand::prelude::Distribution<T>,
