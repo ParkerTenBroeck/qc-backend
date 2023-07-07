@@ -37,7 +37,12 @@ struct QCForm {
     buildlocation: String,
     buildtype: String,
     drivetype: String,
+    // example SHIL-0023746
     itemserial: String,
+    // example CFS-SL300F-001220
+    asmserial: String,
+    // the serial listed in the bios of the device
+    oemserial: String,
     makemodel: String,
     msoinstalled: bool,
     operatingsystem: String,
@@ -83,6 +88,14 @@ macro_rules! dyn_qc_form_column {
             }
             "itemserial" => {
                 let $ident = qc_forms::itemserial;
+                $succ_text
+            }
+            "asmserial" => {
+                let $ident = qc_forms::asmserial;
+                $succ_text
+            }
+            "oemserial" => {
+                let $ident = qc_forms::oemserial;
                 $succ_text
             }
             "makemodel" => {
@@ -247,7 +260,6 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
         ident: String,
         high_value: String,
     ) -> Result<DynExpr, VisitorError> {
-        
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -391,7 +403,6 @@ async fn search(
             boxed = boxed.limit(limit)
         }
     }
-    
 
     let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
@@ -507,7 +518,8 @@ mod tests {
         #[derive(Debug, Rand)]
         enum Location {
             NIA,
-            MIA,
+            MIS,
+            GTA,
         }
 
         #[derive(Debug, Rand)]
@@ -515,6 +527,7 @@ mod tests {
             SSD,
             M2,
             NVMe,
+            MSata,
             HDD,
         }
 
@@ -555,13 +568,13 @@ mod tests {
 
         #[derive(Debug, Rand)]
         enum RamSize {
-            GB1,
-            GB2,
-            GB4,
-            GB8,
-            GB16,
-            GB32,
-            GB64,
+            GB001,
+            GB002,
+            GB004,
+            GB008,
+            GB016,
+            GB032,
+            GB064,
         }
 
         #[derive(Debug, Rand, Copy, Clone)]
@@ -618,6 +631,7 @@ mod tests {
         ];
 
         let mut ids = [1u64; 7];
+        let mut asm_serial_num = 1;
 
         use rand::{distributions::Standard, rngs::ThreadRng, Rng};
         use rand_derive::Rand;
@@ -628,77 +642,90 @@ mod tests {
         let client = Client::tracked(rocket).unwrap();
         assert_eq!(client.delete("/api").dispatch().status(), Status::Ok);
 
+        let mut rng = rand::thread_rng();
+        let rng = &mut rng;
 
-        std::thread::scope(|scope|{
-            let threads = 1000;
-            for _ in 0..threads{
-                let mut rng = rand::thread_rng();
-                let rng = &mut rng;
-
-                for _ in 0..(500000/threads) {
-                    fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
-                    where
-                        Standard: rand::prelude::Distribution<T>,
-                    {
-                        format!("{:?}", rng.gen::<T>())
-                    }
-        
-                    let form = QCForm {
-                        id: None,
-                        assemblydate: Time(
-                            OffsetDateTime::from_unix_timestamp(rng.gen_range(
-                                time::Date::MIN.midnight().assume_utc().unix_timestamp(),
-                                time::Date::MAX.midnight().assume_utc().unix_timestamp(),
-                            ))
-                            .unwrap(),
-                        ),
-                        buildlocation: random_str::<Location>(rng),
-                        buildtype: random_str::<BuildType>(rng),
-                        drivetype: random_str::<DriveType>(rng),
-                        itemserial: {
-                            let kind = rng.gen::<SerialStart>();
-                            let range = if rng.gen_range(0.0, 1.0) < 0.1 {
-                                rng.gen_range(1, 100)
-                            } else {
-                                1
-                            };
-                            ids[kind as usize] += range;
-                            format!("{:?}-{:010}", kind, ids[kind as usize])
-                        },
-                        makemodel: random_str::<MakeModel>(rng),
-                        msoinstalled: rng.gen::<bool>(),
-                        operatingsystem: random_str::<OsInstalled>(rng),
-                        processorgen: format!("{}", rng.gen_range(1, 14)),
-                        processortype: random_str::<ProcessorType>(rng),
-                        qc1: {
-                            let mut checks = QCChecklist::new();
-                            for check in check_ids {
-                                checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
-                            }
-                            checks
-                        },
-                        qc1initial: random_str::<Initial>(rng),
-                        qc2: {
-                            let mut checks = QCChecklist::new();
-                            for check in check_ids {
-                                checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
-                            }
-                            checks
-                        },
-                        qc2initial: random_str::<Initial>(rng),
-                        ramsize: random_str::<RamSize>(rng),
-                        ramtype: random_str::<RamType>(rng),
-                        rctpackage: random_str::<RCTPackage>(rng),
-                        salesorder: random_str::<SalesOrder>(rng),
-                        technotes: "".into(),
-                    };
-        
-                    assert_eq!(
-                        client.post("/api/new_post").json(&form).dispatch().status(),
-                        Status::Created
-                    );
-                }
+        for _ in 0..50000 {
+            fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
+            where
+                Standard: rand::prelude::Distribution<T>,
+            {
+                format!("{:?}", rng.gen::<T>())
             }
-        });
+
+            let rctpackage = random_str::<RCTPackage>(rng);
+            let salesorder = random_str::<SalesOrder>(rng);
+
+            let form = QCForm {
+                id: None,
+                assemblydate: Time(
+                    OffsetDateTime::from_unix_timestamp(rng.gen_range(
+                        time::Date::MIN.midnight().assume_utc().unix_timestamp(),
+                        time::Date::MAX.midnight().assume_utc().unix_timestamp(),
+                    ))
+                    .unwrap(),
+                ),
+                buildlocation: random_str::<Location>(rng),
+                buildtype: random_str::<BuildType>(rng),
+                drivetype: random_str::<DriveType>(rng),
+                itemserial: {
+                    let kind = rng.gen::<SerialStart>();
+                    let range = if rng.gen_range(0.0, 1.0) < 0.1 {
+                        rng.gen_range(1, 100)
+                    } else {
+                        1
+                    };
+                    ids[kind as usize] += range;
+                    format!("{:?}-{:010}", kind, ids[kind as usize])
+                },
+                asmserial: {
+                    let range = if rng.gen_range(0.0, 1.0) < 0.1 {
+                        rng.gen_range(1, 100)
+                    } else {
+                        1
+                    };
+                    asm_serial_num += range;
+                    format!("{}-{}-{:06}", salesorder, rctpackage, asm_serial_num)
+                },
+                oemserial: {
+                    rand::thread_rng()
+                        .sample_iter(&rand::distributions::Alphanumeric)
+                        .take(7)
+                        .map(char::from)
+                        .collect()
+                },
+                makemodel: random_str::<MakeModel>(rng),
+                msoinstalled: rng.gen::<bool>(),
+                operatingsystem: random_str::<OsInstalled>(rng),
+                processorgen: format!("{}", rng.gen_range(1, 14)),
+                processortype: random_str::<ProcessorType>(rng),
+                qc1: {
+                    let mut checks = QCChecklist::new();
+                    for check in check_ids {
+                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                    }
+                    checks
+                },
+                qc1initial: random_str::<Initial>(rng),
+                qc2: {
+                    let mut checks = QCChecklist::new();
+                    for check in check_ids {
+                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                    }
+                    checks
+                },
+                qc2initial: random_str::<Initial>(rng),
+                ramsize: random_str::<RamSize>(rng),
+                ramtype: random_str::<RamType>(rng),
+                rctpackage,
+                salesorder,
+                technotes: "".into(),
+            };
+
+            assert_eq!(
+                client.post("/api/new_post").json(&form).dispatch().status(),
+                Status::Created
+            );
+        }
     }
 }

@@ -8,6 +8,8 @@ diesel::table! {
         buildtype -> Text,
         drivetype -> Text,
         itemserial -> Text,
+        asmserial -> Text,
+        oemserial -> Text,
         makemodel -> Text,
         msoinstalled -> Bool,
         operatingsystem -> Text,
