@@ -362,7 +362,7 @@ async fn search(
     {
         let mut order_table = search.order_table.unwrap_or("id");
 
-        if !order_table.trim().is_empty() {
+        if order_table.trim().is_empty() {
             order_table = "id";
         }
 
@@ -628,70 +628,77 @@ mod tests {
         let client = Client::tracked(rocket).unwrap();
         assert_eq!(client.delete("/api").dispatch().status(), Status::Ok);
 
-        let mut rng = rand::thread_rng();
-        let rng = &mut rng;
-        for _ in 0..500000 {
-            fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
-            where
-                Standard: rand::prelude::Distribution<T>,
-            {
-                format!("{:?}", rng.gen::<T>())
-            }
 
-            let form = QCForm {
-                id: None,
-                assemblydate: Time(
-                    OffsetDateTime::from_unix_timestamp(rng.gen_range(
-                        time::Date::MIN.midnight().assume_utc().unix_timestamp(),
-                        time::Date::MAX.midnight().assume_utc().unix_timestamp(),
-                    ))
-                    .unwrap(),
-                ),
-                buildlocation: random_str::<Location>(rng),
-                buildtype: random_str::<BuildType>(rng),
-                drivetype: random_str::<DriveType>(rng),
-                itemserial: {
-                    let kind = rng.gen::<SerialStart>();
-                    let range = if rng.gen_range(0.0, 1.0) < 0.1 {
-                        rng.gen_range(1, 100)
-                    } else {
-                        1
+        std::thread::scope(|scope|{
+            let threads = 1000;
+            for _ in 0..threads{
+                let mut rng = rand::thread_rng();
+                let rng = &mut rng;
+
+                for _ in 0..(500000/threads) {
+                    fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
+                    where
+                        Standard: rand::prelude::Distribution<T>,
+                    {
+                        format!("{:?}", rng.gen::<T>())
+                    }
+        
+                    let form = QCForm {
+                        id: None,
+                        assemblydate: Time(
+                            OffsetDateTime::from_unix_timestamp(rng.gen_range(
+                                time::Date::MIN.midnight().assume_utc().unix_timestamp(),
+                                time::Date::MAX.midnight().assume_utc().unix_timestamp(),
+                            ))
+                            .unwrap(),
+                        ),
+                        buildlocation: random_str::<Location>(rng),
+                        buildtype: random_str::<BuildType>(rng),
+                        drivetype: random_str::<DriveType>(rng),
+                        itemserial: {
+                            let kind = rng.gen::<SerialStart>();
+                            let range = if rng.gen_range(0.0, 1.0) < 0.1 {
+                                rng.gen_range(1, 100)
+                            } else {
+                                1
+                            };
+                            ids[kind as usize] += range;
+                            format!("{:?}-{:010}", kind, ids[kind as usize])
+                        },
+                        makemodel: random_str::<MakeModel>(rng),
+                        msoinstalled: rng.gen::<bool>(),
+                        operatingsystem: random_str::<OsInstalled>(rng),
+                        processorgen: format!("{}", rng.gen_range(1, 14)),
+                        processortype: random_str::<ProcessorType>(rng),
+                        qc1: {
+                            let mut checks = QCChecklist::new();
+                            for check in check_ids {
+                                checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                            }
+                            checks
+                        },
+                        qc1initial: random_str::<Initial>(rng),
+                        qc2: {
+                            let mut checks = QCChecklist::new();
+                            for check in check_ids {
+                                checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                            }
+                            checks
+                        },
+                        qc2initial: random_str::<Initial>(rng),
+                        ramsize: random_str::<RamSize>(rng),
+                        ramtype: random_str::<RamType>(rng),
+                        rctpackage: random_str::<RCTPackage>(rng),
+                        salesorder: random_str::<SalesOrder>(rng),
+                        technotes: "".into(),
                     };
-                    ids[kind as usize] += range;
-                    format!("{:?}-{:80}", kind, ids[kind as usize])
-                },
-                makemodel: random_str::<MakeModel>(rng),
-                msoinstalled: rng.gen::<bool>(),
-                operatingsystem: random_str::<OsInstalled>(rng),
-                processorgen: format!("{}", rng.gen_range(1, 14)),
-                processortype: random_str::<ProcessorType>(rng),
-                qc1: {
-                    let mut checks = QCChecklist::new();
-                    for check in check_ids {
-                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
-                    }
-                    checks
-                },
-                qc1initial: random_str::<Initial>(rng),
-                qc2: {
-                    let mut checks = QCChecklist::new();
-                    for check in check_ids {
-                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
-                    }
-                    checks
-                },
-                qc2initial: random_str::<Initial>(rng),
-                ramsize: random_str::<RamSize>(rng),
-                ramtype: random_str::<RamType>(rng),
-                rctpackage: random_str::<RCTPackage>(rng),
-                salesorder: random_str::<SalesOrder>(rng),
-                technotes: "".into(),
-            };
-
-            assert_eq!(
-                client.post("/api/new_post").json(&form).dispatch().status(),
-                Status::Created
-            );
-        }
+        
+                    assert_eq!(
+                        client.post("/api/new_post").json(&form).dispatch().status(),
+                        Status::Created
+                    );
+                }
+            }
+        });
     }
 }
