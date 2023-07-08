@@ -352,8 +352,6 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
     pub fn parse(&mut self) -> Result<T, ExpressionParserError<E>> {
         #[derive(Debug)]
         enum State {
-            TopCalled,
-            TopReturned,
             OrCalled,
             OrReturned1,
             OrReturned2,
@@ -364,18 +362,11 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
             BottomReturn1,
             BottomReturn2,
         }
-        let mut state_stack = vec![State::TopCalled];
+        let mut state_stack = vec![State::OrCalled];
         let mut var_stack = vec![];
 
         while let Some(state) = state_stack.pop() {
             match state {
-                State::TopCalled => {
-                    state_stack.push(State::TopReturned);
-                    state_stack.push(State::OrCalled);
-                }
-                State::TopReturned => {
-                    //nothing
-                }
                 State::OrCalled => {
                     state_stack.push(State::OrReturned1);
                     state_stack.push(State::AndCalled);
@@ -417,7 +408,7 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
 
                     if tok.data == Token::LPar {
                         state_stack.push(State::BottomReturn1);
-                        state_stack.push(State::TopCalled);
+                        state_stack.push(State::OrCalled);
                         continue;
                     } else if let Token::Value(low_value) = tok.data {
                         expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
@@ -484,7 +475,15 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
 
 #[test]
 fn test_parser() {
-    let search = "!(hello:\"lol\" | two > \"2\" & three < \"3\" | !four = \"4\") & five=\"5\"";
+    // let search = "!(hello:\"lol\" | two > \"2\" & three < \"3\" | !four = \"4\") & five=\"5\"";
+    let mut search = String::new();
+    for _ in 0..5000000{
+        search.push('(');
+    }
+    search.push_str("hellp:\"lol\"");
+    for _ in 0..5000000{
+        search.push(')');
+    }
     // let search = "!(hellp:\"lol\")";
     struct VisitorTest {}
     impl VisitorTest {
@@ -526,11 +525,11 @@ fn test_parser() {
             Ok(format!("(!({}))", expr))
         }
     }
-    for token in Tokenizer::new(search) {
-        println!("{:#?}", token);
-    }
+    // for token in Tokenizer::new(&search) {
+    //     println!("{:#?}", token);
+    // }
     let mut visitor = VisitorTest::new();
-    let mut expr = ExpressionParser::new(search, &mut visitor);
+    let mut expr = ExpressionParser::new(&search, &mut visitor);
     let res = expr.parse();
     drop(expr);
     println!("{:#?}", res);
