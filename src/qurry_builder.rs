@@ -256,6 +256,7 @@ pub enum ExpressionParserError<T> {
         expected: &'static str,
     },
     VisitorError(T),
+    InvalidParsingStack,
 }
 
 macro_rules! unwrap_token {
@@ -331,6 +332,15 @@ macro_rules! expect_tok {
     }};
 }
 
+macro_rules! pop_stack {
+    ($expr:expr) => {
+        match $expr.pop(){
+            Some(some) => some,
+            None => return Err(ExpressionParserError::InvalidParsingStack)
+        }
+    };
+}
+
 impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
     pub fn new(expression: &'a str, visitor: &'b mut impl Visitor<T, E>) -> Self {
         Self {
@@ -338,99 +348,151 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
             visitor,
         }
     }
+
     pub fn parse(&mut self) -> Result<T, ExpressionParserError<E>> {
-        self.parse_top()
-    }
+        #[derive(Debug)]
+        enum State {
+            TopCalled,
+            TopReturned,
+            OrCalled,
+            OrReturned1,
+            OrReturned2,
+            AndCalled,
+            AndReturned1,
+            AndReturned2,
+            BottomCalled,
+            BottomReturn1,
+            BottomReturn2,
+        }
+        let mut state_stack = vec![State::TopCalled];
+        let mut var_stack = vec![];
 
-    fn parse_top(&mut self) -> Result<T, ExpressionParserError<E>> {
-        self.parse_3()
-    }
+        while let Some(state) = state_stack.pop() {
+            match state {
+                State::TopCalled => {
+                    state_stack.push(State::TopReturned);
+                    state_stack.push(State::OrCalled);
+                }
+                State::TopReturned => {
+                    //nothing
+                }
+                State::OrCalled => {
+                    state_stack.push(State::OrReturned1);
+                    state_stack.push(State::AndCalled);
+                }
+                State::OrReturned1 => {
+                    if tok_matches!(self.tokenizer.peek(), Token::Or) {
+                        self.tokenizer.next();
+                        state_stack.push(State::OrReturned2);
+                        state_stack.push(State::AndCalled);
+                    } else {
+                        //return
+                    }
+                }
+                State::OrReturned2 => {
+                    let (rs, ls) = (pop_stack!(var_stack), pop_stack!(var_stack));
+                    var_stack.push(unwrap_visitor!(self.visitor.or(ls, rs)));
+                    state_stack.push(State::OrReturned1);
+                }
+                State::AndCalled => {
+                    state_stack.push(State::AndReturned1);
+                    state_stack.push(State::BottomCalled);
+                }
+                State::AndReturned1 => {
+                    if tok_matches!(self.tokenizer.peek(), Token::And) {
+                        self.tokenizer.next();
+                        state_stack.push(State::AndReturned2);
+                        state_stack.push(State::BottomCalled);
+                    } else {
+                        //return
+                    }
+                }
+                State::AndReturned2 => {
+                    let (rs, ls) = (pop_stack!(var_stack), pop_stack!(var_stack));
+                    var_stack.push(unwrap_visitor!(self.visitor.and(ls, rs)));
+                    state_stack.push(State::AndReturned1);
+                }
+                State::BottomCalled => {
+                    let tok = unwrap_token!(self.tokenizer.next());
 
-    fn parse_3(&mut self) -> Result<T, ExpressionParserError<E>> {
-        let mut ls = self.parse_2()?;
+                    if tok.data == Token::LPar {
+                        state_stack.push(State::BottomReturn1);
+                        state_stack.push(State::TopCalled);
+                        continue;
+                    } else if let Token::Value(low_value) = tok.data {
+                        expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
+                        let ident = expect_ident!(unwrap_token!(self.tokenizer.next()));
+                        expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
+                        let high_value = expect_value!(unwrap_token!(self.tokenizer.next()));
+                        return Ok(unwrap_visitor!(self
+                            .visitor
+                            .between(low_value, ident, high_value)));
+                    } else if tok.data == Token::Bang {
+                        state_stack.push(State::BottomReturn2);
+                        state_stack.push(State::BottomCalled);
+                        continue;
+                    }
+                    let ident = expect_ident!(tok);
 
-        loop {
-            if tok_matches!(self.tokenizer.peek(), Token::Or) {
-                self.tokenizer.next();
-                let rs = self.parse_2()?;
-                ls = unwrap_visitor!(self.visitor.or(ls, rs));
-            } else {
-                return Ok(ls);
+                    let operator = unwrap_token!(self.tokenizer.next());
+
+                    let val = match operator.data {
+                        Token::Eq => {
+                            let value = expect_value!(unwrap_token!(self.tokenizer.next()));
+                            unwrap_visitor!(self.visitor.eq(ident, value))
+                        }
+                        Token::Gt => {
+                            let value = expect_value!(unwrap_token!(self.tokenizer.next()));
+                            unwrap_visitor!(self.visitor.gt(ident, value))
+                        }
+                        Token::Lt => {
+                            let value = expect_value!(unwrap_token!(self.tokenizer.next()));
+                            unwrap_visitor!(self.visitor.lt(ident, value))
+                        }
+                        Token::Colon => {
+                            let value = expect_value!(unwrap_token!(self.tokenizer.next()));
+                            unwrap_visitor!(self.visitor.colon(ident, value))
+                        }
+                        _ => {
+                            return Err(ExpressionParserError::UnexpectedTokenReason {
+                                got: operator,
+                                expected: stringify!(
+                                    Token::Eq | Token::Gt | Token::Lt | Token::Colon
+                                ),
+                            })
+                        }
+                    };
+                    var_stack.push(val);
+                }
+                State::BottomReturn1 => {
+                    expect_tok!(unwrap_token!(self.tokenizer.next()), Token::RPar);
+                }
+                State::BottomReturn2 => {
+                    let expr = pop_stack!(var_stack);
+                    var_stack.push(unwrap_visitor!(self.visitor.not(expr)))
+                }
             }
         }
-    }
 
-    fn parse_2(&mut self) -> Result<T, ExpressionParserError<E>> {
-        let mut ls = self.parse_1()?;
-
-        loop {
-            if tok_matches!(self.tokenizer.peek(), Token::And) {
-                self.tokenizer.next();
-                let rs = self.parse_1()?;
-                ls = unwrap_visitor!(self.visitor.and(ls, rs));
-            } else {
-                return Ok(ls);
-            }
+        let ret = pop_stack!(var_stack);
+        if !var_stack.is_empty(){
+            return Err(ExpressionParserError::InvalidParsingStack);
         }
-    }
-
-    fn parse_1(&mut self) -> Result<T, ExpressionParserError<E>> {
-        let tok = unwrap_token!(self.tokenizer.next());
-
-        if tok.data == Token::LPar {
-            let expr = self.parse_top()?;
-            expect_tok!(unwrap_token!(self.tokenizer.next()), Token::RPar);
-            return Ok(expr);
-        } else if let Token::Value(low_value) = tok.data {
-            expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
-            let ident = expect_ident!(unwrap_token!(self.tokenizer.next()));
-            expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
-            let high_value = expect_value!(unwrap_token!(self.tokenizer.next()));
-            return Ok(unwrap_visitor!(self
-                .visitor
-                .between(low_value, ident, high_value)));
-        } else if tok.data == Token::Bang {
-            let expr = self.parse_1()?;
-            return Ok(unwrap_visitor!(self.visitor.not(expr)));
-        }
-        let ident = expect_ident!(tok);
-
-        let operator = unwrap_token!(self.tokenizer.next());
-
-        match operator.data {
-            Token::Eq => {
-                let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(unwrap_visitor!(self.visitor.eq(ident, value)))
-            }
-            Token::Gt => {
-                let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(unwrap_visitor!(self.visitor.gt(ident, value)))
-            }
-            Token::Lt => {
-                let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(unwrap_visitor!(self.visitor.lt(ident, value)))
-            }
-            Token::Colon => {
-                let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                Ok(unwrap_visitor!(self.visitor.colon(ident, value)))
-            }
-            _ => Err(ExpressionParserError::UnexpectedTokenReason {
-                got: operator,
-                expected: stringify!(Token::Eq | Token::Gt | Token::Lt | Token::Colon),
-            }),
-        }
+        Ok(ret)
     }
 }
 
 #[test]
 fn test_parser() {
-    let search = "(hello:\"lol\" | two > \"2\")";
+    let search = "!(hello:\"lol\" | two > \"2\" & three < \"3\" | !four = \"4\") & five=\"5\"";
+    // let search = "!(hellp:\"lol\")";
     struct VisitorTest {}
     impl VisitorTest {
         pub fn new() -> Self {
             Self {}
         }
     }
+
     impl crate::qurry_builder::Visitor<String, ()> for VisitorTest {
         fn eq(&mut self, ident: String, value: String) -> Result<String, ()> {
             Ok(format!("({}={:#?})", ident, value))

@@ -26,7 +26,10 @@ fn rocket() -> _ {
         .attach(database::stage())
         .mount(
             "/",
-            FileServer::new("./static/RCT-FormBuilder", Options::DotFiles | Options::Index | Options::IndexFile),
+            FileServer::new(
+                "./static/RCT-FormBuilder",
+                Options::DotFiles | Options::Index | Options::IndexFile,
+            ),
         )
     // .mount("/", routes![index])
     // .mount(
