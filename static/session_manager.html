@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+  <title>Session Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    
+    .container {
+      margin: 20px;
+    }
+
+    #sessionIDInput {
+      width: 200px;
+    }
+
+    #startButton {
+      margin-left: 10px;
+    }
+
+    .liveSession {
+      border: 1px solid #ccc;
+      height: 200px;
+      width: 400px;
+      overflow-y: scroll;
+      padding: 10px;
+      background-color: #f9f9f9;
+    }
+
+    #messageInput {
+      margin-top: 20px;
+      width: 400px;
+      height: 80px;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: auto 1fr; 
+      grid-template-rows: auto;
+      gap: 0;
+    }
+
+    .grid-item {
+      padding: 1px;
+      border: 1px transparent;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <input type="text" id="sessionIDInput" placeholder="Enter session ID(Initials)">
+    <button id="startButton" onclick="startSession()">Start Session</button>
+    <button id="clearSession" disabled="true" onclick="clearSession()">Clear Sessoin</button>
+  </div>
+
+  <div class="container liveSession" id="" style="overflow:scroll;">
+    <div id="liveSession" class="grid-container"></div>
+  </div>
+
+  <div class="container">
+    <textarea id="messageInput" placeholder="Enter newline separated data" disabled></textarea>
+  </div>
+
+  <script>
+    let currentSession = null;
+
+    function startSession() {
+        if (currentSession != null){
+            currentSession.close();
+            return;
+        }
+
+        let session_id = document.getElementById("sessionIDInput").value;
+        document.getElementById("startButton").innerText = "Connecting...";
+        try{
+            currentSession =  new WebSocket("ws://" + location.host + "/api/open_session/"+session_id);
+        }catch(e){
+            console.error(e);
+            return;
+        }
+      
+        currentSession.addEventListener("open", (event) => {
+            document.getElementById("startButton").innerText = "End Session";
+            document.getElementById("messageInput").disabled = false;
+            document.getElementById("clearSession").disabled = false;
+            document.getElementById("sessionIDInput").disabled = true;
+            document.getElementById("liveSession").innerText = "";
+        });
+
+        currentSession.addEventListener("close", (evnet) => {
+            document.getElementById("startButton").innerText = "Start Session";
+            document.getElementById("messageInput").disabled = true;
+            document.getElementById("clearSession").disabled = true;
+            document.getElementById("sessionIDInput").disabled = false;
+            document.getElementById("liveSession").innerText = "";
+            currentSession = null;
+            if (event.code != 1006){
+              console.log(event.reason);
+              if (event.reason.trim().length > 0){
+                alert(event.reason)
+              }else{
+                alert("Session ended for an unknown reason code: " + event.code);
+              }
+            }
+        });
+        currentSession.addEventListener("message", (event) => {
+          document.getElementById("liveSession").innerHTML = "";
+          let arr = JSON.parse(event.data);
+          for(let i = 0; i < arr.length; i ++){
+            let line = arr[i];
+            document.getElementById("liveSession").innerHTML += "<div class='grid-item'>" + line + "</div>";
+            document.getElementById("liveSession").innerHTML += "<div class='grid-item' style='margin-left:auto;margin-right:0'><button onClick='removeLine("+i+")'>-</button></div>"
+          }
+        });
+
+        currentSession.addEventListener("error", (event) => {
+            console.error(event);
+            currentSession.close();
+            currentSession = null;
+        });
+    }
+
+    function clearSession(){
+      currentSession.send("ClearScreen");
+    }
+
+    function removeLine(line){
+      console.log(line);
+    }
+
+    function sendMessage(message){
+        currentSession.send(message)
+    }
+
+    document.getElementById("messageInput").addEventListener("input", function() {
+        const messageInput = document.getElementById("messageInput");
+        const message = messageInput.value;
+        if (message.includes("\n")) {
+            const lines = message.split("\n");
+            for (const line of lines) {
+            if (line.trim() !== "") {
+                sendMessage(line.trim());
+            //   const liveSession = document.getElementById("liveSession");
+            //   const currentText = liveSession.innerText;
+            //   liveSession.innerText = currentText + "\n" + line.trim();
+            }
+            }
+            messageInput.value = "";
+        }
+    });
+  </script>
+</body>
+</html>

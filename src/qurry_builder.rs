@@ -1,6 +1,7 @@
 use std::{iter::Peekable, str::Chars};
 
 use serde::Serialize;
+use serde_json::Value;
 
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub struct TokenizerPosition {
@@ -30,6 +31,9 @@ pub enum TokenizerError {
     UnclosedString(TokenizerPosition),
     UnfinishedEscape(TokenizerPosition),
     InvalidEscape(char, TokenizerPosition),
+    InvalidPath(char, &'static str),
+    UnclosedPathIndex(TokenizerPosition),
+    UnfinishedPathDot(TokenizerPosition),
 }
 
 impl<'a> Iterator for Tokenizer<'a> {
@@ -41,6 +45,11 @@ impl<'a> Iterator for Tokenizer<'a> {
             Ident,
             String,
             Escape,
+
+            PathDot,
+            PathIndexStart,
+            PathIndex,
+            PathIdent,
         }
         let mut state = TokenizerState::Default;
         let mut current = self.current;
@@ -95,12 +104,25 @@ impl<'a> Iterator for Tokenizer<'a> {
                         return ret;
                     }
                 }
-                TokenizerState::Ident => {
-                    if char.is_alphanumeric() {
+                TokenizerState::Ident => match char {
+                    '.' => {
                         self.chars.next();
                         current.byte_index += char.len_utf8();
                         current.char_index += 1;
-                    } else {
+                        state = TokenizerState::PathDot;
+                    }
+                    '[' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        state = TokenizerState::PathIndexStart;
+                    }
+                    char if char.is_alphanumeric() || char == '_' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                    }
+                    _ => {
                         let token = Token::Ident(
                             self.str[self.current.byte_index..current.byte_index].to_owned(),
                         );
@@ -108,7 +130,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                         self.current = last;
                         return Some(Ok(token));
                     }
-                }
+                },
                 TokenizerState::String => match char {
                     '"' => {
                         self.chars.next();
@@ -155,6 +177,88 @@ impl<'a> Iterator for Tokenizer<'a> {
                         return Some(Err(TokenizerError::InvalidEscape(char, self.current)));
                     }
                 },
+                TokenizerState::PathDot => {
+                    if char.is_alphanumeric() || char == '_' {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        state = TokenizerState::PathIdent;
+                    } else {
+                        return Some(Err(TokenizerError::InvalidPath(
+                            char,
+                            "Expected identifier after dot operator",
+                        )));
+                    }
+                }
+                TokenizerState::PathIndexStart => match char {
+                    ']' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        return Some(Err(TokenizerError::InvalidPath(
+                            char,
+                            "Cannot close empty path index",
+                        )));
+                    }
+                    '0'..='9' | '#' | '-' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        state = TokenizerState::PathIndex;
+                    }
+                    _ => {
+                        return Some(Err(TokenizerError::InvalidPath(
+                            char,
+                            "Unexpected char found in path index",
+                        )));
+                    }
+                },
+                TokenizerState::PathIndex => match char {
+                    ']' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        state = TokenizerState::PathIdent;
+                    }
+                    '0'..='9' | '#' | '-' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                    }
+                    _ => {
+                        return Some(Err(TokenizerError::InvalidPath(
+                            char,
+                            "Unexpected char found in path index",
+                        )));
+                    }
+                },
+                TokenizerState::PathIdent => match char {
+                    '.' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        state = TokenizerState::PathDot;
+                    }
+                    '[' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                        state = TokenizerState::PathIndexStart;
+                    }
+                    char if char.is_alphanumeric() || char == '_' => {
+                        self.chars.next();
+                        current.byte_index += char.len_utf8();
+                        current.char_index += 1;
+                    }
+                    _ => {
+                        let token = Token::Path(
+                            self.str[self.current.byte_index..current.byte_index].to_owned(),
+                        );
+                        let token = TokenFull::new(token, self.current, last);
+                        self.current = last;
+                        return Some(Ok(token));
+                    }
+                },
             }
             last = current;
         }
@@ -167,6 +271,15 @@ impl<'a> Iterator for Tokenizer<'a> {
             }
             TokenizerState::String => Some(Err(TokenizerError::UnclosedString(self.current))),
             TokenizerState::Escape => Some(Err(TokenizerError::UnfinishedEscape(self.current))),
+            TokenizerState::PathDot => Some(Err(TokenizerError::UnfinishedPathDot(self.current))),
+            TokenizerState::PathIndexStart | TokenizerState::PathIndex => {
+                Some(Err(TokenizerError::UnclosedPathIndex(self.current)))
+            }
+            TokenizerState::PathIdent => {
+                let token = Token::Path(self.str[self.current.byte_index..].to_owned());
+                let token = TokenFull::new(token, self.current, last);
+                Some(Ok(token))
+            }
         }
     }
 }
@@ -186,6 +299,7 @@ pub enum Token {
     Bang,
     Eq,
     Ident(String),
+    Path(String),
     Value(String),
 }
 
@@ -204,7 +318,7 @@ impl TokenFull {
 
 #[test]
 fn toknizer_test() {
-    let str = "pa\"\\\"\\\\test\"";
+    let str = "this is.a test to[0] test[12] this.is[0].really.nice[1]";
     let tokenizer = Tokenizer::new(str);
 
     for token in tokenizer {
@@ -229,6 +343,12 @@ fn toknizer_test() {
 pub struct ExpressionParser<'a, 'b, T, E> {
     tokenizer: Peekable<Tokenizer<'a>>,
     visitor: &'b mut dyn Visitor<T, E>,
+}
+
+pub enum Thing {
+    Value(Value),
+    Ident(String),
+    Path(String),
 }
 
 pub trait Visitor<T, E> {
@@ -334,9 +454,9 @@ macro_rules! expect_tok {
 
 macro_rules! pop_stack {
     ($expr:expr) => {
-        match $expr.pop(){
+        match $expr.pop() {
             Some(some) => some,
-            None => return Err(ExpressionParserError::InvalidParsingStack)
+            None => return Err(ExpressionParserError::InvalidParsingStack),
         }
     };
 }
@@ -466,7 +586,7 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
         }
 
         let ret = pop_stack!(var_stack);
-        if !var_stack.is_empty(){
+        if !var_stack.is_empty() {
             return Err(ExpressionParserError::InvalidParsingStack);
         }
         Ok(ret)
@@ -477,11 +597,11 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
 fn test_parser() {
     // let search = "!(hello:\"lol\" | two > \"2\" & three < \"3\" | !four = \"4\") & five=\"5\"";
     let mut search = String::new();
-    for _ in 0..5000000{
+    for _ in 0..5000000 {
         search.push('(');
     }
     search.push_str("hellp:\"lol\"");
-    for _ in 0..5000000{
+    for _ in 0..5000000 {
         search.push(')');
     }
     // let search = "!(hellp:\"lol\")";

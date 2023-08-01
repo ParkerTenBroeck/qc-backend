@@ -4,8 +4,9 @@ CREATE TABLE qc_forms (
     buildlocation VARCHAR NOT NULL,
     buildtype VARCHAR NOT NULL,
     drivetype VARCHAR NOT NULL,
+    drivesize VARCHAR NOT NULL,
     itemserial VARCHAR NOT NULL,
-    asmserial VARCHAR NOT NULL,
+    asmserial VARCHAR,
     oemserial VARCHAR NOT NULL,
     makemodel VARCHAR NOT NULL,
     msoinstalled BOOLEAN NOT NULL,
@@ -15,11 +16,11 @@ CREATE TABLE qc_forms (
     qc1 VARCHAR NOT NULL,
     qc1initial VARCHAR NOT NULL,
     qc2 VARCHAR NOT NULL,
-    qc2initial VARCHAR NOT NULL,
+    qc2initial VARCHAR,
 
     ramsize VARCHAR NOT NULL,
     ramtype VARCHAR NOT NULL,
-    rctpackage VARCHAR NOT NULL,
-    salesorder VARCHAR NOT NULL,
-    technotes VARCHAR NOT NULL
+    salesorder VARCHAR,
+    technotes VARCHAR NOT NULL,
+    metadata VARCHAR
 );

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Split Button with Dialog</title>
+  <link rel="stylesheet" href="main.css">
+
+  </style>
+</head>
+<body>
+
+
+  <div style="margin-top: 50px;">
+    <div id = "special_sauce" style="display:inline-block">
+      <input tag="input"></input>
+      <div style="display:inline-block">
+        <div class="outer-overlapping">
+          <div class="top" style="display:inline-block">
+            <button class="left-button split-button" tag="qc1-button">Tech</button>
+            <button class="right-button split-button" tag="qc2-button">Qc</button>
+          </div>
+          <div class="below" style="display:inline-block">
+            <button class="split-button" tag="cancel-button" style="visibility: hidden;">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sessions.js"></script>
+  <script>
+    
+    const thing = new AutoFillSession("special_sauce", () => {return "PT"}, () => {return "PT"});
+
+  </script>
+</body>
+</html>

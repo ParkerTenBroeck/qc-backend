@@ -5,14 +5,15 @@ edition = "2021"
 
 
 [dependencies]
-rocket = { version = "=0.5.0-rc.3", features = ["json"]}
-rocket_dyn_templates = { version = "=0.1.0-rc.3", features = ["handlebars"] }
+rocket = { features = ["json"], git = "https://github.com/SergioBenitez/Rocket.git", rev = "ce441b5f46fdf5cd99cb32b8b8638835e4c2a5fa" }
+rocket_dyn_templates = { version = "=0.1.0-rc.3", features = ["handlebars"], git = "https://github.com/SergioBenitez/Rocket.git", rev = "ce441b5f46fdf5cd99cb32b8b8638835e4c2a5fa" }
+ws = { package = "rocket_ws", version="=0.1.0-rc.3", git = "https://github.com/SergioBenitez/Rocket.git", rev = "ce441b5f46fdf5cd99cb32b8b8638835e4c2a5fa" }
+rocket_sync_db_pools = { version = "0.1.0-rc.2", features = ["diesel_sqlite_pool"], git = "https://github.com/SergioBenitez/Rocket.git", rev = "ce441b5f46fdf5cd99cb32b8b8638835e4c2a5fa" }
 
 serde_json = "1.0"
 
-diesel = { version = "2.1.0", features = ["sqlite", "time"] }
+diesel = { version = "2.1.0", features = ["sqlite", "time", "serde_json"] }
 diesel-dynamic-schema = "0.2.1"
-rocket_sync_db_pools = { version = "0.1.0-rc.2", features = ["diesel_sqlite_pool"] }
 diesel_migrations = "2.0"
 
 time = {version = "0.3", features = ["serde"]}
@@ -21,6 +22,15 @@ libsqlite3-sys = { version = "0.26", features = ["bundled"] }
 
 serde = "1.0"
 
+# generating pdf
+# svg2pdf = { git = "https://github.com/typst/svg2pdf.git", rev = "14eb3eb5be2f70d6735c88661387fddf0e110871" }
+# usvg = { version = "0.32", features = ["text"]}
+# fontdb = { version = "0.13" }
+
+# headless_chrome = { version = "*", features = ["fetch"]}
+
+
 [dev-dependencies]
 rand = "0.5"
 rand_derive = "0.5"
+

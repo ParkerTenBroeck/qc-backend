@@ -1,5 +1,3 @@
-// @generated automatically by Diesel CLI.
-
 diesel::table! {
     qc_forms (id) {
         id -> Nullable<Integer>,
@@ -8,7 +6,7 @@ diesel::table! {
         buildtype -> Text,
         drivetype -> Text,
         itemserial -> Text,
-        asmserial -> Text,
+        asmserial -> Nullable<Text>,
         oemserial -> Text,
         makemodel -> Text,
         msoinstalled -> Bool,
@@ -18,11 +16,12 @@ diesel::table! {
         qc1 -> Text,
         qc1initial -> Text,
         qc2 -> Text,
-        qc2initial -> Text,
+        qc2initial -> Nullable<Text>,
         ramsize -> Text,
         ramtype -> Text,
-        rctpackage -> Text,
-        salesorder -> Text,
+        salesorder -> Nullable<Text>,
+        drivesize -> Text,
         technotes -> Text,
+        metadata -> Nullable<Text>,
     }
 }

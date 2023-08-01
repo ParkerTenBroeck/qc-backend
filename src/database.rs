@@ -5,6 +5,7 @@ use rocket::response::status::Accepted;
 use rocket::response::{status::Created, Debug};
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{Build, Rocket};
+use crate::json_text::JsonText;
 
 use rocket_sync_db_pools::diesel;
 use serde_json::Value;
@@ -20,7 +21,16 @@ use crate::schema::*;
 #[database("diesel")]
 pub struct Db(diesel::SqliteConnection);
 
-type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
+impl Db {
+    pub async fn get_form(&self, id: i32) -> Result<QCForm> {
+        let form: QCForm = self
+            .run(move |conn| qc_forms::table.filter(qc_forms::id.eq(id)).first(conn))
+            .await?;
+        Ok(form)
+    }
+}
+
+pub type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
 fn time_default() -> Time {
     Time(time::OffsetDateTime::now_utc())
@@ -29,42 +39,45 @@ fn time_default() -> Time {
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = crate::schema::qc_forms)]
-struct QCForm {
+pub struct QCForm {
     #[serde(skip_deserializing)]
-    id: Option<i32>,
+    pub id: Option<i32>,
     #[serde(default = "time_default")]
-    assemblydate: Time,
-    buildlocation: String,
-    buildtype: String,
-    drivetype: String,
+    pub assemblydate: Time,
+    pub buildlocation: String,
+    pub buildtype: String,
+    pub drivetype: String,
     // example SHIL-0023746
-    itemserial: String,
+    pub itemserial: String,
     // example CFS-SL300F-001220
-    asmserial: String,
+    pub asmserial: Option<String>,
     // the serial listed in the bios of the device
-    oemserial: String,
-    makemodel: String,
-    msoinstalled: bool,
-    operatingsystem: String,
-    processorgen: String,
-    processortype: String,
-    qc1: QCChecklist,
-    qc1initial: String,
-    qc2: QCChecklist,
-    qc2initial: String,
+    pub oemserial: String,
+    pub makemodel: String,
+    pub msoinstalled: bool,
+    pub operatingsystem: String,
+    pub processorgen: String,
+    pub processortype: String,
+    pub qc1: QCChecklist,
+    pub qc1initial: String,
+    pub qc2: QCChecklist,
+    pub qc2initial: Option<String>,
 
-    ramsize: String,
-    ramtype: String,
-    rctpackage: String,
-    salesorder: String,
-    technotes: String,
+    pub ramsize: String,
+    pub ramtype: String,
+
+    pub salesorder: Option<String>,
+    pub drivesize: String,
+    pub technotes: String,
+
+    pub metadata: Option<JsonText>,
 }
 
 macro_rules! dyn_qc_form_column {
     ($column:expr, $ident:ident, $succ:block, $fail:block) => {
-        dyn_qc_form_column!($column, $ident, $succ, $succ, $succ, $succ, $fail)
+        dyn_qc_form_column!($column, $ident, $succ, $succ, $succ, $succ, $succ, $fail)
     };
-    ($column:expr, $ident:ident, $succ_text:block, $succ_id:block, $succ_date:block, $succ_bool:block, $fail:block) => {
+    ($column:expr, $ident:ident, $succ_text:block, $succ_text_optional:block, $succ_id:block, $succ_date:block, $succ_bool:block, $fail:block) => {
         match $column {
             "id" => {
                 let $ident = qc_forms::id;
@@ -92,7 +105,7 @@ macro_rules! dyn_qc_form_column {
             }
             "asmserial" => {
                 let $ident = qc_forms::asmserial;
-                $succ_text
+                $succ_text_optional
             }
             "oemserial" => {
                 let $ident = qc_forms::oemserial;
@@ -132,7 +145,7 @@ macro_rules! dyn_qc_form_column {
             }
             "qc2initial" => {
                 let $ident = qc_forms::qc2initial;
-                $succ_text
+                $succ_text_optional
             }
             "ramsize" => {
                 let $ident = qc_forms::ramsize;
@@ -142,17 +155,21 @@ macro_rules! dyn_qc_form_column {
                 let $ident = qc_forms::ramtype;
                 $succ_text
             }
-            "rctpackage" => {
-                let $ident = qc_forms::rctpackage;
+            "drivesize" => {
+                let $ident = qc_forms::drivesize;
                 $succ_text
             }
             "salesorder" => {
                 let $ident = qc_forms::salesorder;
-                $succ_text
+                $succ_text_optional
             }
             "technotes" => {
                 let $ident = qc_forms::technotes;
                 $succ_text
+            }
+            "metadata" => {
+                let $ident = qc_forms::metadata;
+                $succ_text_optional
             }
             _ => $fail,
         }
@@ -160,6 +177,7 @@ macro_rules! dyn_qc_form_column {
 }
 
 // type DynTable = diesel_dynamic_schema::Table<String>;
+
 type DynExpr =
     Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
 
@@ -191,10 +209,26 @@ macro_rules! unwrap_visitor_exression {
 
 impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     fn eq(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+        // {
+        //     let test = diesel_dynamic_schema::table("").column::<diesel::sql_types::Text, _>("test");
+        //     test.eq(value);
+        // }
         dyn_qc_form_column!(
             ident.as_str(),
             column,
             { Ok(Box::new(column.eq(value))) },
+            {
+                if value.is_empty() {
+                    Ok(Box::new(column.is_null()))
+                } else {
+                    Ok(Box::new(
+                        column
+                            .eq(Some(value))
+                            .and(column.is_not_null())
+                            .assume_not_null(),
+                    ))
+                }
+            },
             {
                 Ok(Box::new(
                     column
@@ -217,6 +251,20 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             column,
             { Ok(Box::new(column.lt(value))) },
             {
+                if value.is_empty() {
+                    Err(serde_json::json!({
+                        "Error": "given value cannot be null for lt expression"
+                    }))
+                } else {
+                    Ok(Box::new(
+                        column
+                            .lt(Some(value))
+                            .and(column.is_not_null())
+                            .assume_not_null(),
+                    ))
+                }
+            },
+            {
                 Ok(Box::new(
                     column
                         .lt(unwrap_visitor_exression!(i32, value))
@@ -237,6 +285,20 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             column,
             { Ok(Box::new(column.gt(value))) },
+            {
+                if value.is_empty() {
+                    Err(serde_json::json!({
+                        "Error": "given value cannot be null for gt expression"
+                    }))
+                } else {
+                    Ok(Box::new(
+                        column
+                            .gt(Some(value))
+                            .and(column.is_not_null())
+                            .assume_not_null(),
+                    ))
+                }
+            },
             {
                 Ok(Box::new(
                     column
@@ -264,6 +326,30 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             column,
             { Ok(Box::new(column.between(low_value, high_value))) },
+            {
+                let low_value = if low_value.is_empty() {
+                    None
+                } else {
+                    Some(low_value)
+                };
+                let high_value = if high_value.is_empty() {
+                    None
+                } else {
+                    Some(high_value)
+                };
+                let null = low_value.is_none() | high_value.is_none();
+                let expr = Box::new(
+                    column
+                        .between(low_value, high_value)
+                        .and(column.is_not_null())
+                        .assume_not_null(),
+                );
+                if null {
+                    Ok(Box::new(expr.or(column.is_null())))
+                } else {
+                    Ok(expr)
+                }
+            },
             {
                 Ok(Box::new(
                     column
@@ -299,6 +385,20 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             ident.as_str(),
             _column,
             { Ok(Box::new(_column.like(value))) },
+            {
+                if value.is_empty() {
+                    Err(serde_json::json!({
+                        "Error": "given value cannot be null for like expression"
+                    }))
+                } else {
+                    Ok(Box::new(
+                        _column
+                            .like(Some(value))
+                            .and(_column.is_not_null())
+                            .assume_not_null(),
+                    ))
+                }
+            },
             {
                 Err(serde_json::json!({
                     "Error": "Cannot use like operator with Option<i32> fields"
@@ -404,6 +504,8 @@ async fn search(
         }
     }
 
+    println!("{}", diesel::debug_query::<Sqlite, _>(&boxed));
+
     let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
         Err(err) => return Err(QuerryError::DieselError(err.into())),
@@ -421,14 +523,24 @@ async fn get_post(db: Db, id: i32) -> Option<Json<QCForm>> {
 }
 
 #[post("/new_post", data = "<post>")]
-async fn new_post(db: Db, post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
+async fn new_post(db: Db, mut post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
     let post_value = post.clone();
-    db.run(move |conn| {
-        diesel::insert_into(qc_forms::table)
-            .values(&*post_value)
-            .execute(conn)
-    })
-    .await?;
+
+    post.id = db
+        .run(move |conn| {
+            diesel::insert_into(qc_forms::table)
+                .values(&*post_value)
+                .execute(conn)?;
+
+            let res = qc_forms::table
+                .select(qc_forms::id)
+                .order(qc_forms::id.desc())
+                .first(conn)?;
+            println!("{:#?}", res);
+
+            Result::<Option<i32>, Debug<diesel::result::Error>>::Ok(res)
+        })
+        .await?;
     Ok(Created::new("/").body(post))
 }
 
@@ -439,16 +551,17 @@ async fn timetest(time: String) -> Result<String, String> {
     Ok(time)
 }
 
-#[post("/overwrite_post", data = "<post>")]
-async fn overwrite_post(db: Db, post: Json<QCForm>) -> Result<Accepted<Json<QCForm>>> {
+#[post("/overwrite_post/<id>", data = "<post>")]
+async fn overwrite_post(db: Db, id: i32, mut post: Json<QCForm>) -> Result<Accepted<Json<QCForm>>> {
+    post.id = Some(id);
     let post_value = post.clone();
     db.run(move |conn| {
-        diesel::update(qc_forms::table.filter(qc_forms::id.eq(post_value.id)))
+        diesel::update(qc_forms::table.filter(qc_forms::id.eq(id)))
             .set(&*post_value)
             .execute(conn)
     })
     .await?;
-    Ok(Accepted(Some(post)))
+    Ok(Accepted(post))
 }
 
 pub fn stage() -> AdHoc {
@@ -490,7 +603,7 @@ mod tests {
 
     use crate::{
         database::{QCForm, Time},
-        qc_checklist::QCChecklist,
+        qc_checklist::{QCChecklist, QuestionAnswer},
         schema::qc_forms::{self, drivetype},
     };
 
@@ -507,75 +620,9 @@ mod tests {
 
     #[test]
     fn fuzz_data() {
-        #[derive(Debug, Rand)]
-        enum BuildType {
-            Laptop,
-            Desktop_Mini,
-            Desktop_Micro,
-            Desktop_Standard,
-        }
-
-        #[derive(Debug, Rand)]
-        enum Location {
-            NIA,
-            MIS,
-            GTA,
-        }
-
-        #[derive(Debug, Rand)]
-        enum DriveType {
-            SSD,
-            M2,
-            NVMe,
-            MSata,
-            HDD,
-        }
-
-        #[derive(Debug, Rand)]
-        enum OsInstalled {
-            Linux,
-            Windows10,
-            Windows11,
-            ChromOs,
-            Android,
-        }
-
-        #[derive(Debug, Rand)]
-        enum ProcessorType {
-            Corei5,
-            Corei3,
-            Corei7,
-            Corei9,
-        }
-
-        #[derive(Debug, Rand)]
-        enum Initial {
-            PT,
-            CC,
-            HQ,
-            MA,
-            LP,
-            FH,
-        }
-
-        #[derive(Debug, Rand)]
-        enum RamType {
-            DDR2,
-            DDR3,
-            DDR4,
-            DDR5,
-        }
-
-        #[derive(Debug, Rand)]
-        enum RamSize {
-            GB001,
-            GB002,
-            GB004,
-            GB008,
-            GB016,
-            GB032,
-            GB064,
-        }
+        let conf = crate::Config::load_from_file("./res/everything.json")
+            .expect("Failed to load config file. Fatial Error")
+            .0;
 
         #[derive(Debug, Rand, Copy, Clone)]
         enum SerialStart {
@@ -588,21 +635,14 @@ mod tests {
             SLOL = 6,
         }
 
-        #[derive(Debug, Rand, Copy, Clone)]
-        enum RCTPackage {
-            LT_300U,
-            LT_200U,
-            LT_100U,
-            DT_100U,
-            DT_200U,
-            DT_300U,
-            DT_400U,
-        }
-
-        #[derive(Debug, Rand, Copy, Clone)]
-        enum SalesOrder {
-            CFS,
-            OTR,
+        #[derive(Debug, Rand)]
+        enum Initial {
+            PT,
+            CC,
+            HQ,
+            MA,
+            LP,
+            FH,
         }
 
         #[derive(Debug, Rand, Copy, Clone)]
@@ -619,17 +659,6 @@ mod tests {
             HP_99,
         }
 
-        let check_ids = [
-            "bios_pass",
-            "usb_posts",
-            "bios_reset",
-            "keybaord_mouse",
-            "case",
-            "cd_dvd_drive",
-            "device_manager",
-            "image_loaded",
-        ];
-
         let mut ids = [1u64; 7];
         let mut asm_serial_num = 1;
 
@@ -645,7 +674,7 @@ mod tests {
         let mut rng = rand::thread_rng();
         let rng = &mut rng;
 
-        for _ in 0..50000 {
+        for _ in 0..10 {
             fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
             where
                 Standard: rand::prelude::Distribution<T>,
@@ -653,8 +682,34 @@ mod tests {
                 format!("{:?}", rng.gen::<T>())
             }
 
-            let rctpackage = random_str::<RCTPackage>(rng);
-            let salesorder = random_str::<SalesOrder>(rng);
+            fn random_val(rng: &mut ThreadRng, name: &str, vals: &serde_json::Value) -> String {
+                let arr = vals
+                    .get(name)
+                    .unwrap()
+                    .get("order")
+                    .unwrap()
+                    .as_array()
+                    .unwrap();
+                let index = rng.gen_range(0, arr.len());
+                arr[index].as_str().unwrap().to_owned()
+            }
+
+            fn random_question(rng: &mut ThreadRng) -> QuestionAnswer {
+                let rand = rng.gen_range(0.0, 1.0);
+
+                match rand {
+                    0.0..=0.7 => QuestionAnswer::Pass,
+                    0.0..=0.8 => QuestionAnswer::Fail,
+                    0.0..=0.9 => QuestionAnswer::NA,
+                    0.0..=1.0 => QuestionAnswer::Incomplete,
+                    _ => QuestionAnswer::Incomplete,
+                }
+            }
+
+            let drivesize = random_val(rng, "drivesizes", &conf);
+            let salesorder = String::new();
+            let buildtype = random_val(rng, "buildtypes", &conf);
+                
 
             let form = QCForm {
                 id: None,
@@ -665,9 +720,8 @@ mod tests {
                     ))
                     .unwrap(),
                 ),
-                buildlocation: random_str::<Location>(rng),
-                buildtype: random_str::<BuildType>(rng),
-                drivetype: random_str::<DriveType>(rng),
+                buildlocation: random_val(rng, "buildlocations", &conf),
+                drivetype: random_val(rng, "drivetypes", &conf),
                 itemserial: {
                     let kind = rng.gen::<SerialStart>();
                     let range = if rng.gen_range(0.0, 1.0) < 0.1 {
@@ -676,7 +730,7 @@ mod tests {
                         1
                     };
                     ids[kind as usize] += range;
-                    format!("{:?}-{:010}", kind, ids[kind as usize])
+                    format!("{:?}-{:07}", kind, ids[kind as usize])
                 },
                 asmserial: {
                     let range = if rng.gen_range(0.0, 1.0) < 0.1 {
@@ -685,7 +739,30 @@ mod tests {
                         1
                     };
                     asm_serial_num += range;
-                    format!("{}-{}-{:06}", salesorder, rctpackage, asm_serial_num)
+
+                    #[derive(Debug, Rand, Copy, Clone)]
+                    enum Kind {
+                        CFS,
+                        OTR,
+                    }
+
+                    #[derive(Debug, Rand, Copy, Clone)]
+                    enum Package {
+                        LT_300U,
+                        LT_200U,
+                        LT_100U,
+                        DT_100U,
+                        DT_200U,
+                        DT_300U,
+                        DT_400U,
+                    }
+
+                    Some(format!(
+                        "{:?}-{:?}-{:06}",
+                        rng.gen::<Kind>(),
+                        rng.gen::<Package>(),
+                        asm_serial_num
+                    ))
                 },
                 oemserial: {
                     rand::thread_rng()
@@ -696,30 +773,41 @@ mod tests {
                 },
                 makemodel: random_str::<MakeModel>(rng),
                 msoinstalled: rng.gen::<bool>(),
-                operatingsystem: random_str::<OsInstalled>(rng),
-                processorgen: format!("{}", rng.gen_range(1, 14)),
-                processortype: random_str::<ProcessorType>(rng),
+                operatingsystem: random_val(rng, "operatingsystems", &conf),
+                processorgen: random_val(rng, "processorgens", &conf),
+                processortype: random_val(rng, "processortypes", &conf),
                 qc1: {
                     let mut checks = QCChecklist::new();
-                    for check in check_ids {
-                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                    
+                    for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
+                        if check.get("whitelist_buildtypes").map(|f|f.as_array().map(|f|f.contains(&serde_json::Value::String(buildtype.clone()))).unwrap()).unwrap_or(true){
+                            checks.0.insert(id.to_owned(), QuestionAnswer::Pass);
+                        }
                     }
                     checks
                 },
                 qc1initial: random_str::<Initial>(rng),
                 qc2: {
                     let mut checks = QCChecklist::new();
-                    for check in check_ids {
-                        checks.0.insert(check.to_owned(), rng.gen_range(0, 4));
+                    for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
+                        if check.get("whitelist_buildtypes").map(|f|f.as_array().map(|f|f.contains(&serde_json::Value::String(buildtype.clone()))).unwrap()).unwrap_or(true){
+                            checks.0.insert(id.to_owned(), random_question(rng));
+                        }
                     }
                     checks
                 },
-                qc2initial: random_str::<Initial>(rng),
-                ramsize: random_str::<RamSize>(rng),
-                ramtype: random_str::<RamType>(rng),
-                rctpackage,
-                salesorder,
+                qc2initial: if rng.gen::<bool>() {
+                    None
+                } else {
+                    Some(random_str::<Initial>(rng))
+                },
+                ramsize: random_val(rng, "ramsizes", &conf),
+                ramtype: random_val(rng, "ramtypes", &conf),
+                drivesize,
+                salesorder: None,
                 technotes: "".into(),
+                metadata: None,
+                buildtype,
             };
 
             assert_eq!(

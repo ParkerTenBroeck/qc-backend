@@ -1,0 +1,347 @@
+{{#*inline "drop_down"}}
+<label for="{{id}}" class="col-sm-1 col-form-label ">{{name}}</label>
+<div class="col-sm-3 ">
+    <select required class="custom-select qc-form-item" {{{properties}}} id="{{id}}" name="{{id}}">
+        <option value="" {{#if selected_val}}selected{{/if}} hidden>Choose...</option>
+        {{#each items.order}}
+            {{#with (lookup ../items.values this) as |item|}}
+                <option 
+                {{#if item.size_bytes}}size_bytes="{{item.size_bytes}}"{{/if}} 
+                value="{{../this}}" 
+                {{!-- {{#if (eq ../../selected_value ../this)}}selected{{/if}} --}}
+                {{#if item.hidden}}hidden{{/if}}
+                >{{item.name}}</option>
+            {{/with}}
+        {{/each}}
+    </select>
+</div>
+{{/inline}}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+
+    <link rel="stylesheet" type="text/css" href="style/main.css">
+    <link rel="stylesheet" type="text/css" href="style/bootstrap.min.css">
+    
+    <title>
+       RCT Quality Control Form
+    </title>
+</head>
+
+<body>
+    <form id="qc-form" class="qc-form">
+
+        <div class="form-group row">
+            <h1 class="col-sm-9">Quality Control Form</h1>
+
+            <img class="col-sm-3" alt="Renewed Computer Technology Logo" src="res/logo.png">
+        </div>
+
+        {{!-- <div class="form-group row">
+            <b>
+                <p class="col">
+                    This form is to be completed prior to equipment delivery <br>
+                    1 copy is to be sent with the shipment and 1 copy is to be saved by production for future reference.
+                </p>
+            </b>
+        </div> --}}
+
+        <div class="form-group row">
+
+            {{> drop_down id="buildlocation" items=this.items.buildlocations name="RCT Location"
+            selected_value=this.values.buildlocation}}
+
+            <label for="qc1initial" class="col-sm-1 col-form-label ">QC1 Initial</label>
+            <div class="col-sm-3">
+                <input required type="text" class="form-control qc-form-item" id="qc1initial" name="qc1initial" 
+                {{!-- {{#if this.values.qc1initial}}value="{{this.values.qc1initial}}" {{/if}}  --}}
+                {{#if this.items.initials.pattern}}pattern="{{this.items.initials.pattern}}" {{/if}}
+                    placeholder="Assembly Tech">
+            </div>
+
+            <label for="qc2initial" class="col-sm-1 col-form-label ">QC2 Initial</label>
+            <div class="col-sm-3">
+                <input type="text" class="form-control qc-form-item" id="qc2initial" name="qc2initial" 
+                {{!-- {{#if values.qc2initial}}value="{{values.qc2initial}}" {{/if}}  --}}
+                {{#if items.initials.pattern}}pattern="{{items.initials.pattern}}" {{/if}}
+                    placeholder="SR Tech/Supervisor">
+            </div>
+        </div>
+        <div class="form-group row">
+
+            {{> drop_down id="buildtype" items=this.items.buildtypes name="Build Type"
+            selected_value=this.values.buildtype properties="onchange='update_buildtype(this)'"}}
+
+            <label for="salesorder" class="col-sm-1 col-form-label  ">Sales Order</label>
+            <div class="col-sm-3">
+                <input class="form-control qc-form-item" id="salesorder" name="salesorder" 
+                {{!-- {{#if this.items.salesorder.pattern}}pattern="{{this.items.salesorder.pattern}}" {{/if}}  --}}
+                {{#if this.values.salesorder}}value="{{this.values.salesorder}}" {{/if}}>
+            </div>
+
+            <label for="assemblydate" class="col-sm-1 col-form-labe">Date:</label>
+            <div class="col-sm-3">
+                <input class="form-control qc-form-item" readonly id="assemblydate" name="assemblydate" 
+                {{!-- {{#if this.values.assemblydate}}value="{{this.values.assemblydate}}" {{/if}} --}}
+                >
+            </div>
+        </div>
+        <div class="form-group row">
+
+            <label for="oemserial" class="col-sm-1 col-form-label ">Oem Serial</label>
+            <div class="col-sm-3" id="all_oem_serial">
+                <div>
+                    <input required type="text" class="form-control qc-form-item" id="oemserial" name="oemserial"
+                        tag="input" {{#if this.items.oemserial.pattern}}pattern="{{this.items.oemserial.pattern}}"{{/if}} 
+                        {{!-- {{#if this.values.oemserial}}value="{{this.values.oemserial}}" {{/if}} --}}
+                        ></input>
+                </div>
+                <div style="display:flex;height:0">
+                    <p style="flex: 1">Autofill Session: </p>
+                    <div class="outer-overlapping">
+                        <div class="top btn-group" role="group">
+                            <button type="button" class="left-button split-button btn-sm btn-primary"
+                                tag="qc1-button">Qc1</button>
+                            <button type="button" class="right-button split-button btn-sm btn-primary"
+                                tag="qc2-button">Qc2</button>
+                        </div>
+                        <div class="below">
+                            <button type="button" class="split-button btn-sm btn-primary" tag="cancel-button"
+                                style="visibility: hidden;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- <label for="oemserial" class="col-sm-1 col-form-label  ">Oem Serial</label>
+            <div class="col-sm-3 ">
+                <input required type="text" class="form-control qc-form-item" id="oemserial" name="salesorder">
+            </div> -->
+
+            <label for="itemserial" class="col-sm-1 col-form-label ">Item Serial</label>
+            <div class="col-sm-3" id="all_item_serial">
+                <div>
+                    <input type="text" class="form-control qc-form-item" id="itemserial" name="itemserial" tag="input"
+                        {{#if this.items.itemserial.pattern}}pattern="{{this.items.itemserial.pattern}}" {{/if}} 
+                        {{!-- {{#if this.values.itemserial}}value="{{this.values.itemserial}}" {{/if}} --}}
+                        ></input>
+                </div>
+                <div style="display:flex;height:0">
+                    <p style="flex: 1">Autofill Session: </p>
+                    <div class="outer-overlapping">
+                        <div class="top btn-group" role="group">
+                            <button type="button" class="left-button split-button btn-sm btn-primary"
+                                tag="qc1-button">Qc1</button>
+                            <button type="button" class="right-button split-button btn-sm btn-primary"
+                                tag="qc2-button">Qc2</button>
+                        </div>
+                        <div class="below">
+                            <button type="button" class="split-button btn-sm btn-primary" tag="cancel-button"
+                                style="visibility: hidden;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- <label for="itemserial" class="col-sm-1 col-form-label ">Item Serial</label>
+            <div class="col-sm-2 ">
+                <input required pattern="[a-zA-Z]+-[0-9]{7}" type="text" class="form-control qc-form-item" id="itemserial" name="rctpackage">
+            </div> -->
+
+            <label for="asmserial" class="col-sm-1 col-form-label ">Asm Serial</label>
+            <div class="col-sm-3" id="all_asm_serial">
+                <div>
+                    <input type="text" class="form-control qc-form-item" id="asmserial" name="asmserial" tag="input"
+                        {{#if this.items.asmserial.pattern}}pattern="{{this.items.asmserial.pattern}}" {{/if}} 
+                        {{!-- {{#if this.values.asmserial}}value="{{this.values.asmserial}}" {{/if}} --}}
+                        ></input>
+                </div>
+                <div style="display:flex;height:1rem">
+                    <p style="flex: 1">Autofill Session: </p>
+                    <div class="outer-overlapping">
+                        <div class="top btn-group" role="group">
+                            <button type="button" class="left-button split-button btn-sm btn-primary"
+                                tag="qc1-button">Qc1</button>
+                            <button type="button" class="right-button split-button btn-sm btn-primary"
+                                tag="qc2-button">Qc2</button>
+                        </div>
+                        <div class="below">
+                            <button type="button" class="split-button btn-sm btn-primary" tag="cancel-button"
+                                style="visibility: hidden;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="makemodel" class="col-sm-1 col-form-label ">Make/Model:</label>
+            <div class="col-sm-3 ">
+                <input required type="text" class="form-control qc-form-item" id="makemodel" name="makemodel" {{#if
+                    this.values.makemodel}}value="{{this.values.makemodel}}" {{/if}}></input>
+            </div>
+
+            {{> drop_down id="operatingsystem" items=this.items.operatingsystems name="Operating System"
+            selected_value=this.values.operatingsystem}}
+
+            <label for="msoinstalled" class="col-sm-1 col-form-label ">MS Office</label>
+            <div class="col-sm-3">
+                <select required class="custom-select qc-form-item" id="msoinstalled" name="msoinstalled">
+                    <option value="" selected hidden>Choose...</option>
+                    <option value="true" {{!--{{#if (eq this.values.msoinstalled true)}}selected{{/if}}--}}>YES</option>
+                    <option value="false" {{!-- {{#if (eq this.values.msoinstalled false)}}selected{{/if}} --}}</option>>NO</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group row">
+            {{> drop_down id="processortype" items=this.items.processortypes name="Processor Type"
+            selected_value=this.values.processortype}}
+            {{> drop_down id="ramtype" items=this.items.ramtypes name="RAM Type" selected_value=this.values.ramtype}}
+            {{> drop_down id="drivetype" items=this.items.drivetypes name="Drive Type"
+            selected_value=this.values.drivetype}}
+        </div>
+
+        <div class="form-group row">
+            {{> drop_down id="processorgen" items=this.items.processorgens name="Processor Gen"
+            selected_value=this.values.processorgen}}
+            {{> drop_down id="ramsize" items=this.items.ramsizes name="RAM Size" selected_value=this.values.ramsize}}
+            {{> drop_down id="drivesize" items=this.items.drivesizes name="Drive Size"
+            selected_value=this.values.drivesize}}
+        </div>
+
+        <div id="qc-checks" class="horizontal-center-outer">
+            <div class="horizontal-center-inner"  style="border: 1px solid black;">
+            
+            <ul class="qc-checks grid-list">
+            {{#each this.items.qc_checks.tech_form as |section |}}
+                <li qc_check_section_heading="{{@index}}">    
+                    <div><p style="font-size:20px;font-weight: bold;">{{section.heading}}</p></div>
+                </li>
+                <li qc_check_section_heading="{{@index}}">
+                    <div style="width:49%;display: inline-block;text-align: center">
+                        <p style="font-size:20px;font-weight: bold;">QC1</p>
+                    </div>
+                    <div style="width:49%;display: inline-block;text-align: center;">    
+                        <p style="font-size:20px;font-weight: bold;">QC2</p>
+                    </div>
+                </li>
+                
+                {{#each section.questions as |question_id|}}
+
+                {{!-- <div> --}}
+                {{!-- <tr id="{{question_id}}" class="qc-check"> --}}
+                    {{#with (lookup @root.items.qc_checks.questions question_id) as |question|}}
+                        
+                        <li 
+                        qc_question_section="{{@../../index}}"
+                        question_id="{{question_id}}" 
+                        
+                        {{#if question.whitelist_buildtypes}}
+                        whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
+                        {{/if}}
+                        {{#if question.hidden}}
+                        hidden whitelist_buildtypes="none"
+                        {{/if}}
+                        >
+                            <p style="margin-left: 2em">{{question.question}}</p>
+                        </li>
+
+                        <li 
+                        qc_question_section="{{@../../index}}"
+                        question_id="{{question_id}}" 
+                        class="qc-check-answer"
+                        {{#if question.whitelist_buildtypes}}
+                        whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
+                        {{/if}}
+                        {{#if question.hidden}}
+                        hidden whitelist_buildtypes="none"
+                        {{/if}}
+                        >
+
+                            {{#*inline "questions"}}
+                            <div class="radio-toolbar" style="display: inline-block;margin-right: 1rem;">
+                                <input 
+                                    class="{{qc}} radio-btn radio-pass" 
+                                    type="radio" 
+                                    id="{{qc}}-pass-{{question_id}}" 
+                                    name="{{qc}}-{{question_id}}" 
+                                    value="1"
+                                    {{!-- {{#if (eq answer 1)}}checked{{/if}} --}}
+                                    >
+                                <label for="{{qc}}-pass-{{question_id}}">Pass</label>
+
+                                <input 
+                                    class="{{qc}} adio-btn radio-fail" 
+                                    type="radio" 
+                                    id="{{qc}}-fail-{{question_id}}" 
+                                    name="{{qc}}-{{question_id}}" 
+                                    value="2"
+                                    {{!-- {{#if (eq answer 2)}}checked{{/if}} --}}
+                                    >
+                                <label for="{{qc}}-fail-{{question_id}}">Fail</label>
+
+                                <input 
+                                    class="{{qc}} radio-btn radio-na" 
+                                    type="radio" 
+                                    id="{{qc}}-na-{{question_id}}" 
+                                    name="{{qc}}-{{question_id}}" 
+                                    value="3"
+                                    {{!-- {{#if (eq answer 3)}}checked{{/if}} --}}
+                                    >
+                                <label for="{{qc}}-na-{{question_id}}">N/A</label>
+                            </div>
+                            {{/inline}}
+                            
+                            {{> questions qc = "qc1" answer=(lookup @root.values.qc1 question_id) question_id=question_id}}
+
+                            {{> questions qc = "qc2" answer=(lookup @root.values.qc2 question_id) question_id=question_id}}
+                        </li>
+                    {{/with}}
+                {{/each}}
+            {{/each}}
+            </ul>
+            </div>
+        </div>
+        
+
+        <div class="horizontal-center-outer">
+            <label class="horizontal-center-inner" for="technotes">Tech Notes:</label>
+            <textarea class="horizontal-center-inner col-sm-6 qc-form-item" id="technotes" name="technotes" rows="3"></textarea>
+        </div>
+
+        <div class="horizontal-center-outer" style="margin-top:1em" id="control-panel">
+            <div class="horizontal-center-inner">
+                <span class="col-sm-1"></span>
+                {{#if this.values.id}}
+                <button type="button" class="btn btn-primary" id="updateButton" onclick="update_form()">UPDATE</button>
+                {{else}}
+                <button type="button" class="btn btn-primary" id="saveButton" onclick="save_form()">SAVE</button>
+                {{/if}}
+                <button type="button" class="btn btn-primary" id="printButton" onclick="print()">PRINT</button>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        var edit_id = {{#if this.values.id}}{{this.values.id}}{{else}}null{{/if}};
+        var download_id_on_save = {{#if this.values.download_id_on_save}}true{{else}}null{{/if}};
+        var metadata = {{json_stringify this.values.metadata}}
+    </script>
+    
+    <script src="src/database_api.js"></script>
+    <script src="src/sessions.js"></script>
+    <script src="src/qc_form.js"></script>
+    <script>
+        update_form_values({{json_stringify this.values}})
+    </script>
+</body>
+
+</html>

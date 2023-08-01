@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <link rel="stylesheet" type="text/css" href="style/main.css">
+    <link rel="stylesheet" href="style/bootstrap.min.css">
+    <title>
+       RCT Quality Control Database
+    </title>
+</head>
+
+<body>
+
+    <div class="form-group row">
+        <h1 class="col-sm-9">Quality Control Database</h1>
+
+        <img class="col-sm-3" alt="Renewed Computer Technology Logo" src="res/logo.png">
+    </div>
+
+    <div class="input-group rounded float-left">
+        <input id="databse_search_parameters" type="search" class="form-control col-sm-3 rounded" placeholder="search"
+            aria-label="search" aria-describedby="search-database" />
+        <input id="table_entry_limit" type="search" class="form-control col-sm-1 rounded" placeholder="limit"
+            value="100" aria-label="limit" aria-describedby="search-database" />
+        <input id="table_entry_page" type="page" class="form-control col-sm-1 rounded" placeholder="page"
+            aria-label="limit" aria-describedby="search-database" />
+        <button onclick="make_search()">Search</button>
+    </div>
+
+    <style>
+        .tightly_packed td {
+            padding-left: 1px;
+            padding-right: 1px;
+            text-align: center;
+        }
+
+        .tightly_packed span {
+            /* width:0px; */
+            display: block;
+            white-space: break-all !important;
+        }
+
+        .tightly_packed button {
+            white-space: normal !important;
+            padding: .1rem .22rem !important;
+        }
+
+        .tightly_packed label {
+            padding: .1rem .22rem !important;
+        }
+    </style>
+
+    <table class="table table-bordered tightly_packed" id="qurry_list_visibility_selection">
+        <tr>
+            <td>Visible: </td>
+            {{#each @root.items.database.order as |column_id|}}
+                {{#with (lookup @root.items.database.columns column_id) as |column| }}
+                <td><button data-toggle="button" type="button" class="btn btn-primary btn-sm row_visibility_button {{#if column.show}}active{{/if}}"
+                        {{#if column.show}}active{{/if}} onclick="updateVisibleComumns({{@../index}})"><span>{{column.name}}</span></button></td>
+                {{/with}}
+            {{/each}}
+        </tr>
+        <tr data-toggle="buttons" role="toolbar">
+            <td>Ordering: </td>
+            <div class="btn-toolbar" aria-label="Toolbar with button groups">
+                {{#each @root.items.database.order as |column_id|}}
+                    {{#with (lookup @root.items.database.columns column_id) as |column| }}
+                        {{#if column.db_column}}
+                        <td>
+                            <div class="btn-group-toggle btn-group me-2" order_table="{{column_id}}" role="group"
+                                aria-label="First group">
+                                <label onclick="order_radio(this)" class="btn btn-secondary btn-sm">
+                                    <input type="radio" name="options" ascending="true" autocomplete="off">asc
+                                </label>
+                                <label onclick="order_radio(this)" class="btn btn-secondary btn-sm">
+                                    <input type="radio" name="options" ascending="false" autocomplete="off">dec
+                                </label>
+                            </div>
+                        </td>
+                        {{else}}
+                        <td></td>
+                        {{/if}}
+                    {{/with}}
+                {{/each}}
+            </div>
+
+        </tr>
+    </table>
+
+
+    <table class="table table-striped" , id="qurry_list">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                {{#each @root.items.database.order as |column_id|}}
+                    {{#with (lookup @root.items.database.columns column_id) as |column| }}
+                    <th scope="col">{{column.name}}</th>
+                    {{/with}}
+                {{/each}}
+            </tr>
+        </thead>
+        <tbody id="display_list_body">
+        </tbody>
+    </table>
+
+    <script src="src/database_api.js"></script>
+    <script src="src/database.js"></script>
+    <!--Import Javascript components needed for bootstrap-->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

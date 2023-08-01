@@ -1,0 +1,87 @@
+.outer-overlapping {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  place-items: center;
+}
+
+.outer-overlapping>* {
+  grid-column: 1 / 1;
+  grid-row: 1 / 1;
+}
+
+.split-button {
+  display: inline-block;
+  position: relative;
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.split-button .left-button,
+.split-button .right-button {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 50%;
+  background-color: #007bff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+
+.horizontal-center-inner {
+  display: table;
+  margin: 0 auto;
+}
+
+.horizontal-center-outer {
+  width: 100%
+}
+
+.radio-toolbar input[type="radio"] {
+  display: none;
+}
+
+.radio-toolbar label {
+  display: inline-block;
+  background-color: #ddd;
+  padding: 4px 11px;
+  font-family: Arial;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.qc-checks {
+  display: grid;
+  grid-template-columns: auto max-content ;
+  grid-gap: 0px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.radio-toolbar input[type="radio"]:checked+label {
+  background-color: #bbb;
+}
+
+.radio-toolbar .radio-pass[type="radio"]:checked+label {
+  background-color: green;
+  user-select: none;
+}
+
+.radio-toolbar .radio-fail[type="radio"]:checked+label {
+  background-color: red;
+  user-select: none;
+}
+
+.radio-toolbar .radio-na[type="radio"]:checked+label {
+  background-color: yellow;
+  user-select: none;
+}
