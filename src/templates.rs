@@ -44,7 +44,7 @@ async fn qc_form_provided(
     ))
 }
 
-#[get("/qc_form?<id>", rank = 1)]
+#[get("/qc_form/<id>", rank = 1)]
 async fn qc_form_id(items: &Config, id: i32, db: Db) -> database::Result<Template> {
     let values = db.get_form(id).await?;
     Ok(Template::render(

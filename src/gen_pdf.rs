@@ -2,7 +2,6 @@
 use rocket::fairing::AdHoc;
 use rocket_dyn_templates::context;
 use rocket_dyn_templates::Template;
-use std::sync::OnceLock;
 
 use crate::Config;
 use crate::database;

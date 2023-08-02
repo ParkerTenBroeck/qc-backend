@@ -54,7 +54,7 @@ async function generateTableFromJizml(jsonList) {
                 var linkText = document.createTextNode(jsonObj[key_map[k]]);
                 a.appendChild(linkText);
                 a.title = jsonObj[key_map[k]];
-                a.href = "/qc_form?id=" + jsonObj[key_map[k]];
+                a.href = "/qc_form/" + jsonObj[key_map[k]];
                 cell.appendChild(a);
             } else {
                 cell.appendChild(document.createTextNode(jsonObj[key_map[k]]));
