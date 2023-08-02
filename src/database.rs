@@ -674,7 +674,7 @@ mod tests {
         let mut rng = rand::thread_rng();
         let rng = &mut rng;
 
-        for _ in 0..10 {
+        for _ in 0..50000 {
             fn random_str<T: std::fmt::Debug>(rng: &mut ThreadRng) -> String
             where
                 Standard: rand::prelude::Distribution<T>,
@@ -781,7 +781,7 @@ mod tests {
                     
                     for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
                         if check.get("whitelist_buildtypes").map(|f|f.as_array().map(|f|f.contains(&serde_json::Value::String(buildtype.clone()))).unwrap()).unwrap_or(true){
-                            checks.0.insert(id.to_owned(), QuestionAnswer::Pass);
+                            checks.0.insert(id.to_owned(), random_question(rng));
                         }
                     }
                     checks

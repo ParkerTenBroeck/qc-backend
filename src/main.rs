@@ -55,7 +55,7 @@ impl<'r> FromRequest<'r> for &'r Config {
 }
 
 mod helper {
-    use rocket_dyn_templates::handlebars::{Helper, Handlebars, Context, RenderContext, Output, HelperResult, handlebars_helper, RenderError};
+    use rocket_dyn_templates::handlebars::{Helper, Handlebars, Context, RenderContext, Output, HelperResult, handlebars_helper};
     use serde_json::Value;
 
     pub fn json_stringify(
@@ -73,49 +73,6 @@ mod helper {
     handlebars_helper!(contains: |ar: Value, val: Value|{
             ar.as_array().map(|v|v.contains(&val)).unwrap_or_else(||ar.eq(&val))
     });
-
-    pub fn set_var(
-        h: &Helper<'_, '_>,
-        gb: &Handlebars<'_>,
-        c: &Context,
-        rc: &mut RenderContext<'_, '_>,
-        out: &mut dyn Output,
-    ) -> HelperResult {
-        let param = h
-            .param(0)
-            .ok_or(RenderError::new("Variable name non existant"))?
-            .value()
-            .as_str()
-            .ok_or(RenderError::new("Expected string"))?;
-       
-            let param2 = h
-            .param(1)
-            .ok_or(RenderError::new("Variable name non existant"))?
-            .value();
-
-        
-       
-        let mut context = c.to_owned();
-        // rc.context()
-        if let Some(some) = context.data_mut().as_object_mut(){
-            some.insert(param.to_string(), param2.to_owned());
-        }
-
-        rc.set_context(context);
-        println!("{:#?}", c.data());
-        Ok(())
-    }
-
-    // pub fn contains(
-    //     h: &Helper<'_, '_>,
-    //     _: &Handlebars<'_>,
-    //     _: &Context,
-    //     _rc: &mut RenderContext<'_, '_>,
-    //     out: &mut dyn Output,
-    // ) -> HelperResult {
-    //     println!("{:#?}", c.data());
-    //     Ok(())
-    // }
 }
 
 #[launch]
@@ -129,9 +86,18 @@ fn rocket() -> _ {
             engine.handlebars
                 .register_helper("json_stringify", Box::new(helper::json_stringify));
             engine.handlebars
-                .register_helper("set_var", Box::new(helper::set_var));
-            engine.handlebars
                 .register_helper("contains", Box::new(helper::contains));
+            engine.handlebars.set_strict_mode(true);
+
+            let scripts = std::fs::read_dir("./template_scripts").unwrap();
+            for path in scripts.flatten(){
+                // path.path().file_stem()
+                if let Some(name) = path.path().file_stem().map(|s|s.to_str()).unwrap_or(None){
+                    println!("{name}");
+                    engine.handlebars.register_script_helper_file(name, path.path()).unwrap();
+                }
+            }
+            // engine.handlebars.register_script_helper("name", "script")?;
         }))
         .attach(database::stage())
         .attach(copy_session::stage())
@@ -144,13 +110,5 @@ fn rocket() -> _ {
                 Options::DotFiles | Options::Index | Options::IndexFile,
             )
             .rank(5),
-        )
-        .mount(
-            "/",
-            FileServer::new(
-                "./RCT-FormBuilder",
-                Options::DotFiles | Options::Index | Options::IndexFile,
-            )
-            .rank(10),
         )
 }

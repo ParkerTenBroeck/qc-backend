@@ -10,6 +10,8 @@ rocket_dyn_templates = { version = "=0.1.0-rc.3", features = ["handlebars"], git
 ws = { package = "rocket_ws", version="=0.1.0-rc.3", git = "https://github.com/SergioBenitez/Rocket.git", rev = "ce441b5f46fdf5cd99cb32b8b8638835e4c2a5fa" }
 rocket_sync_db_pools = { version = "0.1.0-rc.2", features = ["diesel_sqlite_pool"], git = "https://github.com/SergioBenitez/Rocket.git", rev = "ce441b5f46fdf5cd99cb32b8b8638835e4c2a5fa" }
 
+handlebars = {version = "4.3.7", features = ["script_helper"]}
+
 serde_json = "1.0"
 
 diesel = { version = "2.1.0", features = ["sqlite", "time", "serde_json"] }

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            width: 210mm;
+            /*this just makes sure it doesnt overflow into two pages on the pdf*/
+            height: 296.5mm;
+            margin: 0px;
+            /* change the margins as you want them to be. */
+        }
+        .border {
+            width: calc(100% - 10mm - 10mm);
+            height: calc(100% - 10mm - 10mm);
+            margin: 10mm;
+            /* change the margins as you want them to be. */
+        }
+        .information p{
+            font-size: 14px;
+            padding: 0px;
+            margin: 0px;   
+        }
+    </style>
+</head>
+
+<body style="border:1px solid blue">
+    <div class="border" style="border:1px solid red">
+        <div class="information">
+            {{test}}
+        <p>
+            {{#with (lookup this.items.buildlocations.values this.values.buildlocation) as |buildlocation|}}
+            Location: {{buildlocation.name}}
+            {{/with}}
+        </p>
+        <p>
+            QC1 Initial: {{this.values.qc1initial}}
+        </p>
+        <p>
+            QC2 Initial: {{this.values.qc2initial}}
+        </p>
+        <p>
+            {{#with (lookup this.items.buildtypes.values this.values.buildtype) as |buildtype|}}
+            Build Type: {{buildtype.name}}
+            {{/with}}
+        </p>
+        <p>
+            Sales Order: {{this.values.salesorder}}
+        </p>
+        <p>
+            Date: {{this.values.assemblydate}}
+        </p>
+        <p>
+            Oem Serial: {{this.values.oemserial}}
+        </p>    
+        <p>
+            Item Serial: {{this.values.itemserial}}
+        </p>
+        <p>
+            Asm Serial: {{this.values.asmserial}}
+        </p>
+        <p>
+            {{#with (lookup this.items.operatingsystems.values this.values.operatingsystem) as |operatingsystem|}}
+            OS: {{operatingsystem.name}}
+            {{/with}}
+        </p>
+        <p>
+            MSO Installed: {{#if this.values.msinstalled}}yes{{else}}no{{/if}}
+        </p>
+        <p>
+            {{#with (lookup this.items.processortypes.values this.values.processortype) as |processortype|}}
+            Processor Type: {{processortype.name}}
+            {{/with}}
+        </p>
+        <p>
+            {{#with (lookup this.items.ramtypes.values this.values.ramtype) as |ramtype|}}
+            Ram Type: {{ramtype.name}}
+            {{/with}}
+        </p>
+        <p>
+            {{#with (lookup this.items.drivetypes.values this.values.drivetype) as |drivetype|}}
+            Drive Type: {{drivetype.name}}
+            {{/with}}
+        </p>
+        <p>
+            {{#with (lookup this.items.processorgens.values this.values.processorgen) as |processorgen|}}
+            Processor Gen: {{processorgen.name}}
+            {{/with}}
+        </p>
+        <p>
+            {{#with (lookup this.items.ramsizes.values this.values.ramsize) as |ramsize|}}
+            Ram Size: {{ramsize.name}}
+            {{/with}}
+        </p>
+        <p>
+            {{#with (lookup this.items.drivesizes.values this.values.drivesize) as |drivesize|}}
+            Drive Size: {{drivesize.name}}
+            {{/with}}
+        </p>
+        </div>
+    </div>
+</body>
+
+</html>

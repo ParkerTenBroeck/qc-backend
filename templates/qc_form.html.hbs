@@ -1,7 +1,7 @@
 {{#*inline "drop_down"}}
 <label for="{{id}}" class="col-sm-1 col-form-label ">{{name}}</label>
 <div class="col-sm-3 ">
-    <select required class="custom-select qc-form-item" {{{properties}}} id="{{id}}" name="{{id}}">
+    <select required class="custom-select qc-form-item" {{#if properties}}{{{properties}}}{{/if}} id="{{id}}" name="{{id}}">
         <option value="" {{#if selected_val}}selected{{/if}} hidden>Choose...</option>
         {{#each items.order}}
             {{#with (lookup ../items.values this) as |item|}}
@@ -22,7 +22,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -37,7 +37,7 @@
     </title>
 </head>
 
-<body>
+<body style="overflow-x:hidden;padding: 0 10px">
     <form id="qc-form" class="qc-form">
 
         <div class="form-group row">
@@ -244,11 +244,12 @@
                         qc_question_section="{{@../../index}}"
                         question_id="{{question_id}}" 
                         
-                        {{#if question.whitelist_buildtypes}}
-                        whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
-                        {{/if}}
                         {{#if question.hidden}}
                         hidden whitelist_buildtypes="none"
+                        {{else}}
+                            {{#if question.whitelist_buildtypes}}
+                            whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
+                            {{/if}}
                         {{/if}}
                         >
                             <p style="margin-left: 2em">{{question.question}}</p>
@@ -258,11 +259,13 @@
                         qc_question_section="{{@../../index}}"
                         question_id="{{question_id}}" 
                         class="qc-check-answer"
-                        {{#if question.whitelist_buildtypes}}
-                        whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
-                        {{/if}}
+                        
                         {{#if question.hidden}}
                         hidden whitelist_buildtypes="none"
+                        {{else}}
+                            {{#if question.whitelist_buildtypes}}
+                            whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
+                            {{/if}}
                         {{/if}}
                         >
 
@@ -300,9 +303,10 @@
                             </div>
                             {{/inline}}
                             
-                            {{> questions qc = "qc1" answer=(lookup @root.values.qc1 question_id) question_id=question_id}}
-
-                            {{> questions qc = "qc2" answer=(lookup @root.values.qc2 question_id) question_id=question_id}}
+                            {{!-- answer=(lookup @root.values.qc1 question_id) --}}
+                            {{> questions qc = "qc1" question_id=question_id}}
+                            {{!-- answer=(lookup @root.values.qc2 question_id)  --}}
+                            {{> questions qc = "qc2" question_id=question_id}}
                         </li>
                     {{/with}}
                 {{/each}}
