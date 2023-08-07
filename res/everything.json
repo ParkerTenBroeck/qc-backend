@@ -108,8 +108,7 @@
             "keyboard_trackpad_clean": {"whitelist_buildtypes": ["laptop", "tablet"], "question": "Keyboard/Mouse - Clean/Working"},
             "correct_power_adaptor": {"whitelist_buildtypes": ["laptop", "tablet"], "question": "Correct charger - Clean/Working"},
             "verify_correct_sales_order": {"question": "Items match Sales Order - Verified"},
-            "//": {},
-            "hidden_old": {"question": "This question will still render corectly on the PDF and form for old things but wont be used for new things", "hidden": true}
+            "hidden_old": {"pdf_question": "This will show only on the pdf", "question": "This question will still render corectly on the PDF and form for old things but wont be used for new things this question is also very long and will need to be wrapped in almost every situation so is a good test to see what ling questions will to ", "hidden": true}
         },
         "tech_form": [
             {
@@ -136,7 +135,7 @@
                 ]
             },
             {
-                "heading": "Final Inspection (to be performed just before package or skid is sealed",
+                "heading": "Final Inspection",
                 "questions": [
                     "image_loaded",
                     "attached_screen_check",
@@ -154,51 +153,16 @@
                 ]
             }
         ],
-        "pdf_form": [
-            {
-                "heading": "POST/BIOS/Hardware Verification", 
-                "questions": [
-                    "case_damage_check", 
-                    "keboard_trackpad_damaged", 
-                    "touchscreen_check", 
-                    "cleanliness_visual_check"]
-                },
-            {
-                "heading": "Device Operation Verification",
-                "questions": [
-                    "correct_parts_check",
-                    "post_error_check",
-                    "cmos_check",
-                    "bios_password_removed",
-                    "bios_settings_reset",
-                    "bios_tags_removed",
-                    "boot_sequence_correct",
-                    "sata_operation_correct"
-                ]
-            },
-            {
-                "heading": "Final Inspection (to be performed just before package or skid is sealed",
-                "questions": [
-                    "image_loaded",
-                    "attached_screen_check",
-                    "additional_programs_installed",
-                    "all_usb_working",
-                    "all_sound_working",
-                    "network_connectivity",
-                    "webcam_working",
-                    "hid_working",
-                    "no_device_manager_errrors",
-                    "cd_dvd_working",
-                    "correct_time",
-                    "battery_health",
-                    "mso_installed"
-                ]
-            }
+        "//pdf_form": [
+            {"//": "pdf_form defineds the order and what section questions will appear on in the printable pdf"},
+            {"//": "the format of pdf_form is the same as tech_form. "},
+            {"//": "if pdf_form is left blank (as it is now) tech_form will be used as the default"},
+            {"//": "if needed make sure to remove // before pdf_form to properly use it"}
         ]
     },
     "database": {
         "columns": {
-            "assemblydate": {"name": "Assembly Date", "show": true, "db_column": true},
+            "creationdate": {"name": "Assembly Date", "show": true, "db_column": true},
             "buildtype": {"name": "Build Type", "show": true, "db_column": true},
             "buildlocation": {"name": "Build Location", "db_column": true},
             "qc1initial": {"name": "QC1 Initial", "db_column": true},
@@ -224,10 +188,13 @@
             "incomplete": {"name": "Incomplete", "show": true}
         },
         "order": [
-            "assemblydate", "buildtype", "buildlocation", "qc1initial", "qc2initial",
+            "creationdate", "buildtype", "buildlocation", "qc1initial", "qc2initial",
             "salesorder", "itemserial", "asmserial", "oemserial", "makemodel", "operatingsystem",
             "msoinstalled", "processortype", "processorgen", "drivetype", "drivesize", "ramsize", "ramtype",
             "passes", "fails", "nas", "incomplete"
             ]
     }
 }
+
+
+

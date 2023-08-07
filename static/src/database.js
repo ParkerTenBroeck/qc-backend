@@ -14,7 +14,7 @@ async function generateTableFromJizml(jsonList) {
     var keys = Object.keys(jsonList[0]);
     var key_map = [
         "id",
-        "assemblydate",
+        "creationdate",
         "buildtype",
         "buildlocation",
         "qc1initial",
@@ -43,7 +43,7 @@ async function generateTableFromJizml(jsonList) {
         for (var k = 0; k < key_map.length; k++) {
 
             var cell = document.createElement('td');
-            if (key_map[k] == "assemblydate") {
+            if (key_map[k] == "creationdate") {
                 var time = jsonObj[key_map[k]];
                 var formatted = new Date(time).toLocaleDateString("en-US");
                 cell.appendChild(document.createTextNode(formatted));

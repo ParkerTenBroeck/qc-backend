@@ -37,7 +37,7 @@ async function save_form() {
     }
 
     if (post.id != null){
-        window.location.replace("/qc_form?id=" + post.id);
+        window.location.replace("/qc_form/" + post.id);
     }
 
 }
@@ -92,7 +92,7 @@ function update_form_values(json) {
             case "metadata":
                 metadata = value;
                 break
-            case "assemblydate":
+            case "creationdate":
                 document.getElementById(key).value = value;
                 break;
             default:

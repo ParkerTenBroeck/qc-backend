@@ -11,7 +11,7 @@ async function new_post(request_body) {
 
 
 async function update_post(id, request_body) {
-    return fetch("/api/overwrite_post/" + id, {
+    return fetch("/api/update_post/" + id, {
         method: "POST",
         body: request_body,
         headers: {

@@ -43,7 +43,7 @@
         <div class="form-group row">
             <h1 class="col-sm-9">Quality Control Form</h1>
 
-            <img class="col-sm-3" alt="Renewed Computer Technology Logo" src="res/logo.png">
+            <img class="col-sm-3" alt="Renewed Computer Technology Logo" src="/res/logo.png">
         </div>
 
         {{!-- <div class="form-group row">
@@ -88,10 +88,10 @@
                 {{#if this.values.salesorder}}value="{{this.values.salesorder}}" {{/if}}>
             </div>
 
-            <label for="assemblydate" class="col-sm-1 col-form-labe">Date:</label>
+            <label for="creationdate" class="col-sm-1 col-form-labe">Date:</label>
             <div class="col-sm-3">
-                <input class="form-control qc-form-item" readonly id="assemblydate" name="assemblydate" 
-                {{!-- {{#if this.values.assemblydate}}value="{{this.values.assemblydate}}" {{/if}} --}}
+                <input class="form-control qc-form-item" readonly id="creationdate" name="creationdate" 
+                {{!-- {{#if this.values.creationdate}}value="{{this.values.creationdate}}" {{/if}} --}}
                 >
             </div>
         </div>
@@ -326,10 +326,12 @@
                 <span class="col-sm-1"></span>
                 {{#if this.values.id}}
                 <button type="button" class="btn btn-primary" id="updateButton" onclick="update_form()">UPDATE</button>
+                <a target="_blank" href="/printable/{{@root.values.id}}?immediate">
+                    <button type="button" class="btn btn-primary" id="printButton">PRINT</button>
+                <a>
                 {{else}}
                 <button type="button" class="btn btn-primary" id="saveButton" onclick="save_form()">SAVE</button>
                 {{/if}}
-                <button type="button" class="btn btn-primary" id="printButton" onclick="print()">PRINT</button>
             </div>
         </div>
     </form>
@@ -349,3 +351,7 @@
 </body>
 
 </html>
+
+<script>
+    console.log("hello from out here!");
+</script>

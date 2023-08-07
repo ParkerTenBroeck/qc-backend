@@ -1,6 +1,7 @@
 CREATE TABLE qc_forms (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    assemblydate DATETIME NOT NULL,
+    creationdate DATETIME NOT NULL,
+    lastupdated DATETIME NOT NULL,
     buildlocation VARCHAR NOT NULL,
     buildtype VARCHAR NOT NULL,
     drivetype VARCHAR NOT NULL,

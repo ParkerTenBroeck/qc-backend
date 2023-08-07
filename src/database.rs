@@ -1,3 +1,4 @@
+use crate::json_text::JsonText;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
@@ -5,7 +6,6 @@ use rocket::response::status::Accepted;
 use rocket::response::{status::Created, Debug};
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{Build, Rocket};
-use crate::json_text::JsonText;
 
 use rocket_sync_db_pools::diesel;
 use serde_json::Value;
@@ -39,11 +39,14 @@ fn time_default() -> Time {
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = crate::schema::qc_forms)]
+#[diesel(treat_none_as_null = true)]
 pub struct QCForm {
     #[serde(skip_deserializing)]
     pub id: Option<i32>,
     #[serde(default = "time_default")]
-    pub assemblydate: Time,
+    pub creationdate: Time,
+    #[serde(default = "time_default")]
+    pub lastupdated: Time,
     pub buildlocation: String,
     pub buildtype: String,
     pub drivetype: String,
@@ -73,6 +76,55 @@ pub struct QCForm {
     pub metadata: Option<JsonText>,
 }
 
+#[derive(Debug, Default, Clone, Deserialize, Serialize, AsChangeset)]
+#[serde(crate = "rocket::serde")]
+#[diesel(table_name = crate::schema::qc_forms)]
+#[serde(default)]
+pub struct QCFormUpdate {
+    #[serde(skip_deserializing)]
+    pub lastupdated: Option<Time>,
+    pub buildlocation: Option<String>,
+    pub buildtype: Option<String>,
+    pub drivetype: Option<String>,
+    pub itemserial: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_field")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub asmserial: Option<Option<String>>,
+    pub oemserial: Option<String>,
+    pub makemodel: Option<String>,
+    pub msoinstalled: Option<bool>,
+    pub operatingsystem: Option<String>,
+    pub processorgen: Option<String>,
+    pub processortype: Option<String>,
+    pub qc1: Option<QCChecklist>,
+    pub qc1initial: Option<String>,
+    pub qc2: Option<QCChecklist>,
+    #[serde(deserialize_with = "deserialize_optional_field")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub qc2initial: Option<Option<String>>,
+
+    pub ramsize: Option<String>,
+    pub ramtype: Option<String>,
+
+    #[serde(deserialize_with = "deserialize_optional_field")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub salesorder: Option<Option<String>>,
+    pub drivesize: Option<String>,
+    pub technotes: Option<String>,
+
+    #[serde(deserialize_with = "deserialize_optional_field")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Option<JsonText>>,
+}
+
+fn deserialize_optional_field<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Ok(Some(Option::deserialize(deserializer)?))
+}
+
 macro_rules! dyn_qc_form_column {
     ($column:expr, $ident:ident, $succ:block, $fail:block) => {
         dyn_qc_form_column!($column, $ident, $succ, $succ, $succ, $succ, $succ, $fail)
@@ -83,8 +135,12 @@ macro_rules! dyn_qc_form_column {
                 let $ident = qc_forms::id;
                 $succ_id
             }
-            "assemblydate" => {
-                let $ident = qc_forms::assemblydate;
+            "creationdate" => {
+                let $ident = qc_forms::creationdate;
+                $succ_date
+            }
+            "lastupdated" => {
+                let $ident = qc_forms::lastupdated;
                 $succ_date
             }
             "buildlocation" => {
@@ -551,17 +607,29 @@ async fn timetest(time: String) -> Result<String, String> {
     Ok(time)
 }
 
-#[post("/overwrite_post/<id>", data = "<post>")]
-async fn overwrite_post(db: Db, id: i32, mut post: Json<QCForm>) -> Result<Accepted<Json<QCForm>>> {
-    post.id = Some(id);
-    let post_value = post.clone();
-    db.run(move |conn| {
-        diesel::update(qc_forms::table.filter(qc_forms::id.eq(id)))
-            .set(&*post_value)
-            .execute(conn)
-    })
-    .await?;
-    Ok(Accepted(post))
+#[test]
+fn test() {
+    let val = r#"{"qc1initial": "test", "qc2initial": null}"#;
+    let form: QCFormUpdate = serde_json::from_str(val).unwrap();
+    println!("{:#?}", form);
+}
+
+#[post("/update_post/<id>", data = "<update>")]
+async fn update_post(
+    db: Db,
+    id: i32,
+    mut update: Json<QCFormUpdate>,
+) -> Result<Accepted<Json<QCForm>>> {
+    update.lastupdated = Some(time_default());
+    let res: QCForm = db
+        .run(move |conn| {
+            diesel::update(qc_forms::table.filter(qc_forms::id.eq(id)))
+                .set(&*update)
+                .execute(conn)?;
+            qc_forms::table.filter(qc_forms::id.eq(id)).first(conn)
+        })
+        .await?;
+    Ok(Accepted(Json(res)))
 }
 
 pub fn stage() -> AdHoc {
@@ -571,7 +639,7 @@ pub fn stage() -> AdHoc {
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
             .mount(
                 "/api",
-                routes![get_post, new_post, overwrite_post, search, timetest],
+                routes![get_post, new_post, update_post, search, timetest],
             )
     })
 }
@@ -709,11 +777,17 @@ mod tests {
             let drivesize = random_val(rng, "drivesizes", &conf);
             let salesorder = String::new();
             let buildtype = random_val(rng, "buildtypes", &conf);
-                
 
             let form = QCForm {
                 id: None,
-                assemblydate: Time(
+                creationdate: Time(
+                    OffsetDateTime::from_unix_timestamp(rng.gen_range(
+                        time::Date::MIN.midnight().assume_utc().unix_timestamp(),
+                        time::Date::MAX.midnight().assume_utc().unix_timestamp(),
+                    ))
+                    .unwrap(),
+                ),
+                lastupdated: Time(
                     OffsetDateTime::from_unix_timestamp(rng.gen_range(
                         time::Date::MIN.midnight().assume_utc().unix_timestamp(),
                         time::Date::MAX.midnight().assume_utc().unix_timestamp(),
@@ -778,9 +852,19 @@ mod tests {
                 processortype: random_val(rng, "processortypes", &conf),
                 qc1: {
                     let mut checks = QCChecklist::new();
-                    
+
                     for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
-                        if check.get("whitelist_buildtypes").map(|f|f.as_array().map(|f|f.contains(&serde_json::Value::String(buildtype.clone()))).unwrap()).unwrap_or(true){
+                        if check
+                            .get("whitelist_buildtypes")
+                            .map(|f| {
+                                f.as_array()
+                                    .map(|f| {
+                                        f.contains(&serde_json::Value::String(buildtype.clone()))
+                                    })
+                                    .unwrap()
+                            })
+                            .unwrap_or(true)
+                        {
                             checks.0.insert(id.to_owned(), random_question(rng));
                         }
                     }
@@ -790,7 +874,17 @@ mod tests {
                 qc2: {
                     let mut checks = QCChecklist::new();
                     for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
-                        if check.get("whitelist_buildtypes").map(|f|f.as_array().map(|f|f.contains(&serde_json::Value::String(buildtype.clone()))).unwrap()).unwrap_or(true){
+                        if check
+                            .get("whitelist_buildtypes")
+                            .map(|f| {
+                                f.as_array()
+                                    .map(|f| {
+                                        f.contains(&serde_json::Value::String(buildtype.clone()))
+                                    })
+                                    .unwrap()
+                            })
+                            .unwrap_or(true)
+                        {
                             checks.0.insert(id.to_owned(), random_question(rng));
                         }
                     }
