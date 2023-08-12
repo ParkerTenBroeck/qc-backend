@@ -1,13 +1,13 @@
 
-function getQc1Initial() {
-    return document.getElementById("qc1initial").value;
+function getqc1_initial() {
+    return document.getElementById("qc1_initial").value;
 }
-function getQc2Initial() {
-    return document.getElementById("qc2initial").value;
+function getqc2_initial() {
+    return document.getElementById("qc2_initial").value;
 }
-const autoFillOemSerial = new AutoFillSession("all_oem_serial", getQc1Initial, getQc2Initial);
-const autoFillItemSerial = new AutoFillSession("all_item_serial", getQc1Initial, getQc2Initial);
-const autoFillAsmSerial = new AutoFillSession("all_asm_serial", getQc1Initial, getQc2Initial);
+const autoFilloem_serial = new AutoFillSession("all_oem_serial", getqc1_initial, getqc2_initial);
+const autoFillitem_serial = new AutoFillSession("all_item_serial", getqc1_initial, getqc2_initial);
+const autoFillasm_serial = new AutoFillSession("all_asm_serial", getqc1_initial, getqc2_initial);
 
 
 
@@ -92,14 +92,14 @@ function update_form_values(json) {
             case "metadata":
                 metadata = value;
                 break
-            case "creationdate":
+            case "creation_date":
                 document.getElementById(key).value = value;
                 break;
             default:
                 try {
                     document.getElementById(key).value = value;
-                    if (key === "buildtype" && json.id == null){
-                        update_buildtype();
+                    if (key === "build_type" && json.id == null){
+                        update_build_type();
                     }
                 } catch (e) {
                     console.error(e, key, value)
@@ -174,7 +174,7 @@ function form_to_json(){
         let item = form_items[i];
         if (item.value != null && item.value.length > 0){
             if (item.value != null && item.value.length > 0){
-                if (item.id == "msoinstalled"){
+                if (item.id == "mso_installed"){
                     form[item.id] = item.value == "true";
                 }else{
                     form[item.id] = item.value;
@@ -183,8 +183,8 @@ function form_to_json(){
         }
     }
 
-    if (form.technotes == null){
-        form.technotes = "";
+    if (form.tech_notes == null){
+        form.tech_notes = "";
     }
     form.metadata = metadata;
 
@@ -232,18 +232,18 @@ function collect_qc_questions(){
     return json;
 }
 
-function update_buildtype() {
+function update_build_type() {
     
-    let buildtype = document.getElementById("buildtype").value;
+    let build_type = document.getElementById("build_type").value;
 
-    if(!buildtype){
+    if(!build_type){
         return;
     }
 
-    let whitelists = document.querySelectorAll("[whitelist_buildtypes]");
+    let whitelists = document.querySelectorAll("[whitelist_build_types]");
     for(let i = 0; i < whitelists.length; i ++){
         let whitelist = whitelists[i];
-        let allowed = whitelist.getAttribute("whitelist_buildtypes").split(" ").includes(buildtype.trim());
+        let allowed = whitelist.getAttribute("whitelist_build_types").split(" ").includes(build_type.trim());
         
         if (allowed){
             whitelist.removeAttribute("hidden");

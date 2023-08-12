@@ -44,34 +44,34 @@ pub struct QCForm {
     #[serde(skip_deserializing)]
     pub id: Option<i32>,
     #[serde(default = "time_default")]
-    pub creationdate: Time,
+    pub creation_date: Time,
     #[serde(default = "time_default")]
-    pub lastupdated: Time,
-    pub buildlocation: String,
-    pub buildtype: String,
-    pub drivetype: String,
+    pub last_updated: Time,
+    pub build_location: String,
+    pub build_type: String,
+    pub drive_type: String,
     // example SHIL-0023746
-    pub itemserial: String,
+    pub item_serial: String,
     // example CFS-SL300F-001220
-    pub asmserial: Option<String>,
+    pub asm_serial: Option<String>,
     // the serial listed in the bios of the device
-    pub oemserial: String,
-    pub makemodel: String,
-    pub msoinstalled: bool,
-    pub operatingsystem: String,
-    pub processorgen: String,
-    pub processortype: String,
+    pub oem_serial: String,
+    pub make_model: String,
+    pub mso_installed: bool,
+    pub operating_system: String,
+    pub processor_gen: String,
+    pub processor_type: String,
     pub qc1: QCChecklist,
-    pub qc1initial: String,
+    pub qc1_initial: String,
     pub qc2: QCChecklist,
-    pub qc2initial: Option<String>,
+    pub qc2_initial: Option<String>,
 
-    pub ramsize: String,
-    pub ramtype: String,
+    pub ram_size: String,
+    pub ram_type: String,
 
-    pub salesorder: Option<String>,
-    pub drivesize: String,
-    pub technotes: String,
+    pub sales_order: Option<String>,
+    pub drive_size: String,
+    pub tech_notes: String,
 
     pub metadata: Option<JsonText>,
 }
@@ -82,35 +82,35 @@ pub struct QCForm {
 #[serde(default)]
 pub struct QCFormUpdate {
     #[serde(skip_deserializing)]
-    pub lastupdated: Option<Time>,
-    pub buildlocation: Option<String>,
-    pub buildtype: Option<String>,
-    pub drivetype: Option<String>,
-    pub itemserial: Option<String>,
+    pub last_updated: Option<Time>,
+    pub build_location: Option<String>,
+    pub build_type: Option<String>,
+    pub drive_type: Option<String>,
+    pub item_serial: Option<String>,
     #[serde(deserialize_with = "deserialize_optional_field")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub asmserial: Option<Option<String>>,
-    pub oemserial: Option<String>,
-    pub makemodel: Option<String>,
-    pub msoinstalled: Option<bool>,
-    pub operatingsystem: Option<String>,
-    pub processorgen: Option<String>,
-    pub processortype: Option<String>,
+    pub asm_serial: Option<Option<String>>,
+    pub oem_serial: Option<String>,
+    pub make_model: Option<String>,
+    pub mso_installed: Option<bool>,
+    pub operating_system: Option<String>,
+    pub processor_gen: Option<String>,
+    pub processor_type: Option<String>,
     pub qc1: Option<QCChecklist>,
-    pub qc1initial: Option<String>,
+    pub qc1_initial: Option<String>,
     pub qc2: Option<QCChecklist>,
     #[serde(deserialize_with = "deserialize_optional_field")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub qc2initial: Option<Option<String>>,
+    pub qc2_initial: Option<Option<String>>,
 
-    pub ramsize: Option<String>,
-    pub ramtype: Option<String>,
+    pub ram_size: Option<String>,
+    pub ram_type: Option<String>,
 
     #[serde(deserialize_with = "deserialize_optional_field")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub salesorder: Option<Option<String>>,
-    pub drivesize: Option<String>,
-    pub technotes: Option<String>,
+    pub sales_order: Option<Option<String>>,
+    pub drive_size: Option<String>,
+    pub tech_notes: Option<String>,
 
     #[serde(deserialize_with = "deserialize_optional_field")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -135,92 +135,92 @@ macro_rules! dyn_qc_form_column {
                 let $ident = qc_forms::id;
                 $succ_id
             }
-            "creationdate" => {
-                let $ident = qc_forms::creationdate;
+            "creation_date" => {
+                let $ident = qc_forms::creation_date;
                 $succ_date
             }
-            "lastupdated" => {
-                let $ident = qc_forms::lastupdated;
+            "last_updated" => {
+                let $ident = qc_forms::last_updated;
                 $succ_date
             }
-            "buildlocation" => {
-                let $ident = qc_forms::buildlocation;
+            "build_location" => {
+                let $ident = qc_forms::build_location;
                 $succ_text
             }
-            "buildtype" => {
-                let $ident = qc_forms::buildtype;
+            "build_type" => {
+                let $ident = qc_forms::build_type;
                 $succ_text
             }
-            "drivetype" => {
-                let $ident = qc_forms::drivetype;
+            "drive_type" => {
+                let $ident = qc_forms::drive_type;
                 $succ_text
             }
-            "itemserial" => {
-                let $ident = qc_forms::itemserial;
+            "item_serial" => {
+                let $ident = qc_forms::item_serial;
                 $succ_text
             }
-            "asmserial" => {
-                let $ident = qc_forms::asmserial;
+            "asm_serial" => {
+                let $ident = qc_forms::asm_serial;
                 $succ_text_optional
             }
-            "oemserial" => {
-                let $ident = qc_forms::oemserial;
+            "oem_serial" => {
+                let $ident = qc_forms::oem_serial;
                 $succ_text
             }
-            "makemodel" => {
-                let $ident = qc_forms::makemodel;
+            "make_model" => {
+                let $ident = qc_forms::make_model;
                 $succ_text
             }
-            "msoinstalled" => {
-                let $ident = qc_forms::msoinstalled;
+            "mso_installed" => {
+                let $ident = qc_forms::mso_installed;
                 $succ_bool
             }
-            "operatingsystem" => {
-                let $ident = qc_forms::operatingsystem;
+            "operating_system" => {
+                let $ident = qc_forms::operating_system;
                 $succ_text
             }
-            "processorgen" => {
-                let $ident = qc_forms::processorgen;
+            "processor_gen" => {
+                let $ident = qc_forms::processor_gen;
                 $succ_text
             }
-            "processortype" => {
-                let $ident = qc_forms::processortype;
+            "processor_type" => {
+                let $ident = qc_forms::processor_type;
                 $succ_text
             }
             "qc1" => {
                 let $ident = qc_forms::qc1;
                 $succ_text
             }
-            "qc1initial" => {
-                let $ident = qc_forms::qc1initial;
+            "qc1_initial" => {
+                let $ident = qc_forms::qc1_initial;
                 $succ_text
             }
             "qc2" => {
                 let $ident = qc_forms::qc2;
                 $succ_text
             }
-            "qc2initial" => {
-                let $ident = qc_forms::qc2initial;
+            "qc2_initial" => {
+                let $ident = qc_forms::qc2_initial;
                 $succ_text_optional
             }
-            "ramsize" => {
-                let $ident = qc_forms::ramsize;
+            "ram_size" => {
+                let $ident = qc_forms::ram_size;
                 $succ_text
             }
-            "ramtype" => {
-                let $ident = qc_forms::ramtype;
+            "ram_type" => {
+                let $ident = qc_forms::ram_type;
                 $succ_text
             }
-            "drivesize" => {
-                let $ident = qc_forms::drivesize;
+            "drive_size" => {
+                let $ident = qc_forms::drive_size;
                 $succ_text
             }
-            "salesorder" => {
-                let $ident = qc_forms::salesorder;
+            "sales_order" => {
+                let $ident = qc_forms::sales_order;
                 $succ_text_optional
             }
-            "technotes" => {
-                let $ident = qc_forms::technotes;
+            "tech_notes" => {
+                let $ident = qc_forms::tech_notes;
                 $succ_text
             }
             "metadata" => {
@@ -609,7 +609,7 @@ async fn timetest(time: String) -> Result<String, String> {
 
 #[test]
 fn test() {
-    let val = r#"{"qc1initial": "test", "qc2initial": null}"#;
+    let val = r#"{"qc1_initial": "test", "qc2_initial": null}"#;
     let form: QCFormUpdate = serde_json::from_str(val).unwrap();
     println!("{:#?}", form);
 }
@@ -620,7 +620,7 @@ async fn update_post(
     id: i32,
     mut update: Json<QCFormUpdate>,
 ) -> Result<Accepted<Json<QCForm>>> {
-    update.lastupdated = Some(time_default());
+    update.last_updated = Some(time_default());
     let res: QCForm = db
         .run(move |conn| {
             diesel::update(qc_forms::table.filter(qc_forms::id.eq(id)))
@@ -672,7 +672,7 @@ mod tests {
     use crate::{
         database::{QCForm, Time},
         qc_checklist::{QCChecklist, QuestionAnswer},
-        schema::qc_forms::{self, drivetype},
+        schema::qc_forms::{self, drive_type},
     };
 
     use super::Db;
@@ -714,7 +714,7 @@ mod tests {
         }
 
         #[derive(Debug, Rand, Copy, Clone)]
-        enum MakeModel {
+        enum make_model {
             DELL_200,
             DELL_201,
             DELL_300,
@@ -774,29 +774,29 @@ mod tests {
                 }
             }
 
-            let drivesize = random_val(rng, "drivesizes", &conf);
-            let salesorder = String::new();
-            let buildtype = random_val(rng, "buildtypes", &conf);
+            let drive_size = random_val(rng, "drive_sizes", &conf);
+            let sales_order = String::new();
+            let build_type = random_val(rng, "build_types", &conf);
 
             let form = QCForm {
                 id: None,
-                creationdate: Time(
+                creation_date: Time(
                     OffsetDateTime::from_unix_timestamp(rng.gen_range(
                         time::Date::MIN.midnight().assume_utc().unix_timestamp(),
                         time::Date::MAX.midnight().assume_utc().unix_timestamp(),
                     ))
                     .unwrap(),
                 ),
-                lastupdated: Time(
+                last_updated: Time(
                     OffsetDateTime::from_unix_timestamp(rng.gen_range(
                         time::Date::MIN.midnight().assume_utc().unix_timestamp(),
                         time::Date::MAX.midnight().assume_utc().unix_timestamp(),
                     ))
                     .unwrap(),
                 ),
-                buildlocation: random_val(rng, "buildlocations", &conf),
-                drivetype: random_val(rng, "drivetypes", &conf),
-                itemserial: {
+                build_location: random_val(rng, "build_locations", &conf),
+                drive_type: random_val(rng, "drive_types", &conf),
+                item_serial: {
                     let kind = rng.gen::<SerialStart>();
                     let range = if rng.gen_range(0.0, 1.0) < 0.1 {
                         rng.gen_range(1, 100)
@@ -806,7 +806,7 @@ mod tests {
                     ids[kind as usize] += range;
                     format!("{:?}-{:07}", kind, ids[kind as usize])
                 },
-                asmserial: {
+                asm_serial: {
                     let range = if rng.gen_range(0.0, 1.0) < 0.1 {
                         rng.gen_range(1, 100)
                     } else {
@@ -838,28 +838,28 @@ mod tests {
                         asm_serial_num
                     ))
                 },
-                oemserial: {
+                oem_serial: {
                     rand::thread_rng()
                         .sample_iter(&rand::distributions::Alphanumeric)
                         .take(7)
                         .map(char::from)
                         .collect()
                 },
-                makemodel: random_str::<MakeModel>(rng),
-                msoinstalled: rng.gen::<bool>(),
-                operatingsystem: random_val(rng, "operatingsystems", &conf),
-                processorgen: random_val(rng, "processorgens", &conf),
-                processortype: random_val(rng, "processortypes", &conf),
+                make_model: random_str::<make_model>(rng),
+                mso_installed: rng.gen::<bool>(),
+                operating_system: random_val(rng, "operating_systems", &conf),
+                processor_gen: random_val(rng, "processor_gens", &conf),
+                processor_type: random_val(rng, "processor_types", &conf),
                 qc1: {
                     let mut checks = QCChecklist::new();
 
                     for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
                         if check
-                            .get("whitelist_buildtypes")
+                            .get("whitelist_build_types")
                             .map(|f| {
                                 f.as_array()
                                     .map(|f| {
-                                        f.contains(&serde_json::Value::String(buildtype.clone()))
+                                        f.contains(&serde_json::Value::String(build_type.clone()))
                                     })
                                     .unwrap()
                             })
@@ -870,16 +870,16 @@ mod tests {
                     }
                     checks
                 },
-                qc1initial: random_str::<Initial>(rng),
+                qc1_initial: random_str::<Initial>(rng),
                 qc2: {
                     let mut checks = QCChecklist::new();
                     for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
                         if check
-                            .get("whitelist_buildtypes")
+                            .get("whitelist_build_types")
                             .map(|f| {
                                 f.as_array()
                                     .map(|f| {
-                                        f.contains(&serde_json::Value::String(buildtype.clone()))
+                                        f.contains(&serde_json::Value::String(build_type.clone()))
                                     })
                                     .unwrap()
                             })
@@ -890,18 +890,18 @@ mod tests {
                     }
                     checks
                 },
-                qc2initial: if rng.gen::<bool>() {
+                qc2_initial: if rng.gen::<bool>() {
                     None
                 } else {
                     Some(random_str::<Initial>(rng))
                 },
-                ramsize: random_val(rng, "ramsizes", &conf),
-                ramtype: random_val(rng, "ramtypes", &conf),
-                drivesize,
-                salesorder: None,
-                technotes: "".into(),
+                ram_size: random_val(rng, "ram_sizes", &conf),
+                ram_type: random_val(rng, "ram_types", &conf),
+                drive_size,
+                sales_order: None,
+                tech_notes: "".into(),
                 metadata: None,
-                buildtype,
+                build_type,
             };
 
             assert_eq!(

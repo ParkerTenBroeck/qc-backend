@@ -14,24 +14,24 @@ async function generateTableFromJizml(jsonList) {
     var keys = Object.keys(jsonList[0]);
     var key_map = [
         "id",
-        "creationdate",
-        "buildtype",
-        "buildlocation",
-        "qc1initial",
-        "qc2initial",
+        "creation_date",
+        "build_type",
+        "build_location",
+        "qc1_initial",
+        "qc2_initial",
         "rctpackage",
-        "itemserial",
-        "asmserial",
-        "oemserial",
-        "makemodel",
-        "operatingsystem",
-        "msoinstalled",
-        "processortype",
-        "processorgen",
-        "drivetype",
-        "drivesize",
-        "ramtype",
-        "ramsize"
+        "item_serial",
+        "asm_serial",
+        "oem_serial",
+        "make_model",
+        "operating_system",
+        "mso_installed",
+        "processor_type",
+        "processor_gen",
+        "drive_type",
+        "drive_size",
+        "ram_type",
+        "ram_size"
     ];
     // Loop through each JSON object in the list
     for (var i = 0; i < jsonList.length; i++) {
@@ -43,11 +43,11 @@ async function generateTableFromJizml(jsonList) {
         for (var k = 0; k < key_map.length; k++) {
 
             var cell = document.createElement('td');
-            if (key_map[k] == "creationdate") {
+            if (key_map[k] == "creation_date") {
                 var time = jsonObj[key_map[k]];
                 var formatted = new Date(time).toLocaleDateString("en-US");
                 cell.appendChild(document.createTextNode(formatted));
-            } else if (key_map[k] == "msoinstalled") {
+            } else if (key_map[k] == "mso_installed") {
                 cell.appendChild(document.createTextNode(jsonObj[key_map[k]] ? "Yes" : "No"));
             } else if (key_map[k] == "id") {
                 var a = document.createElement('a');

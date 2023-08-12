@@ -57,52 +57,52 @@
 
         <div class="form-group row">
 
-            {{> drop_down id="buildlocation" items=this.items.buildlocations name="RCT Location"
-            selected_value=this.values.buildlocation}}
+            {{> drop_down id="build_location" items=this.items.build_locations name="RCT Location"
+            selected_value=this.values.build_location}}
 
-            <label for="qc1initial" class="col-sm-1 col-form-label ">QC1 Initial</label>
+            <label for="qc1_initial" class="col-sm-1 col-form-label ">QC1 Initial</label>
             <div class="col-sm-3">
-                <input required type="text" class="form-control qc-form-item" id="qc1initial" name="qc1initial" 
-                {{!-- {{#if this.values.qc1initial}}value="{{this.values.qc1initial}}" {{/if}}  --}}
+                <input required type="text" class="form-control qc-form-item" id="qc1_initial" name="qc1_initial" 
+                {{!-- {{#if this.values.qc1_initial}}value="{{this.values.qc1_initial}}" {{/if}}  --}}
                 {{#if this.items.initials.pattern}}pattern="{{this.items.initials.pattern}}" {{/if}}
                     placeholder="Assembly Tech">
             </div>
 
-            <label for="qc2initial" class="col-sm-1 col-form-label ">QC2 Initial</label>
+            <label for="qc2_initial" class="col-sm-1 col-form-label ">QC2 Initial</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control qc-form-item" id="qc2initial" name="qc2initial" 
-                {{!-- {{#if values.qc2initial}}value="{{values.qc2initial}}" {{/if}}  --}}
+                <input type="text" class="form-control qc-form-item" id="qc2_initial" name="qc2_initial" 
+                {{!-- {{#if values.qc2_initial}}value="{{values.qc2_initial}}" {{/if}}  --}}
                 {{#if items.initials.pattern}}pattern="{{items.initials.pattern}}" {{/if}}
                     placeholder="SR Tech/Supervisor">
             </div>
         </div>
         <div class="form-group row">
 
-            {{> drop_down id="buildtype" items=this.items.buildtypes name="Build Type"
-            selected_value=this.values.buildtype properties="onchange='update_buildtype(this)'"}}
+            {{> drop_down id="build_type" items=this.items.build_types name="Build Type"
+            selected_value=this.values.build_type properties="onchange='update_build_type(this)'"}}
 
-            <label for="salesorder" class="col-sm-1 col-form-label  ">Sales Order</label>
+            <label for="sales_order" class="col-sm-1 col-form-label  ">Sales Order</label>
             <div class="col-sm-3">
-                <input class="form-control qc-form-item" id="salesorder" name="salesorder" 
-                {{!-- {{#if this.items.salesorder.pattern}}pattern="{{this.items.salesorder.pattern}}" {{/if}}  --}}
-                {{#if this.values.salesorder}}value="{{this.values.salesorder}}" {{/if}}>
+                <input class="form-control qc-form-item" id="sales_order" name="sales_order" 
+                {{!-- {{#if this.items.sales_order.pattern}}pattern="{{this.items.sales_order.pattern}}" {{/if}}  --}}
+                {{#if this.values.sales_order}}value="{{this.values.sales_order}}" {{/if}}>
             </div>
 
-            <label for="creationdate" class="col-sm-1 col-form-labe">Date:</label>
+            <label for="creation_date" class="col-sm-1 col-form-labe">Date:</label>
             <div class="col-sm-3">
-                <input class="form-control qc-form-item" readonly id="creationdate" name="creationdate" 
-                {{!-- {{#if this.values.creationdate}}value="{{this.values.creationdate}}" {{/if}} --}}
+                <input class="form-control qc-form-item" readonly id="creation_date" name="creation_date" 
+                {{!-- {{#if this.values.creation_date}}value="{{this.values.creation_date}}" {{/if}} --}}
                 >
             </div>
         </div>
         <div class="form-group row">
 
-            <label for="oemserial" class="col-sm-1 col-form-label ">Oem Serial</label>
+            <label for="oem_serial" class="col-sm-1 col-form-label ">Oem Serial</label>
             <div class="col-sm-3" id="all_oem_serial">
                 <div>
-                    <input required type="text" class="form-control qc-form-item" id="oemserial" name="oemserial"
-                        tag="input" {{#if this.items.oemserial.pattern}}pattern="{{this.items.oemserial.pattern}}"{{/if}} 
-                        {{!-- {{#if this.values.oemserial}}value="{{this.values.oemserial}}" {{/if}} --}}
+                    <input required type="text" class="form-control qc-form-item" id="oem_serial" name="oem_serial"
+                        tag="input" {{#if this.items.oem_serial.pattern}}pattern="{{this.items.oem_serial.pattern}}"{{/if}} 
+                        {{!-- {{#if this.values.oem_serial}}value="{{this.values.oem_serial}}" {{/if}} --}}
                         ></input>
                 </div>
                 <div style="display:flex;height:0">
@@ -122,17 +122,17 @@
                 </div>
             </div>
 
-            <!-- <label for="oemserial" class="col-sm-1 col-form-label  ">Oem Serial</label>
+            <!-- <label for="oem_serial" class="col-sm-1 col-form-label  ">Oem Serial</label>
             <div class="col-sm-3 ">
-                <input required type="text" class="form-control qc-form-item" id="oemserial" name="salesorder">
+                <input required type="text" class="form-control qc-form-item" id="oem_serial" name="sales_order">
             </div> -->
 
-            <label for="itemserial" class="col-sm-1 col-form-label ">Item Serial</label>
+            <label for="item_serial" class="col-sm-1 col-form-label ">Item Serial</label>
             <div class="col-sm-3" id="all_item_serial">
                 <div>
-                    <input type="text" class="form-control qc-form-item" id="itemserial" name="itemserial" tag="input"
-                        {{#if this.items.itemserial.pattern}}pattern="{{this.items.itemserial.pattern}}" {{/if}} 
-                        {{!-- {{#if this.values.itemserial}}value="{{this.values.itemserial}}" {{/if}} --}}
+                    <input type="text" class="form-control qc-form-item" id="item_serial" name="item_serial" tag="input"
+                        {{#if this.items.item_serial.pattern}}pattern="{{this.items.item_serial.pattern}}" {{/if}} 
+                        {{!-- {{#if this.values.item_serial}}value="{{this.values.item_serial}}" {{/if}} --}}
                         ></input>
                 </div>
                 <div style="display:flex;height:0">
@@ -152,17 +152,17 @@
                 </div>
             </div>
 
-            <!-- <label for="itemserial" class="col-sm-1 col-form-label ">Item Serial</label>
+            <!-- <label for="item_serial" class="col-sm-1 col-form-label ">Item Serial</label>
             <div class="col-sm-2 ">
-                <input required pattern="[a-zA-Z]+-[0-9]{7}" type="text" class="form-control qc-form-item" id="itemserial" name="rctpackage">
+                <input required pattern="[a-zA-Z]+-[0-9]{7}" type="text" class="form-control qc-form-item" id="item_serial" name="rctpackage">
             </div> -->
 
-            <label for="asmserial" class="col-sm-1 col-form-label ">Asm Serial</label>
+            <label for="asm_serial" class="col-sm-1 col-form-label ">Asm Serial</label>
             <div class="col-sm-3" id="all_asm_serial">
                 <div>
-                    <input type="text" class="form-control qc-form-item" id="asmserial" name="asmserial" tag="input"
-                        {{#if this.items.asmserial.pattern}}pattern="{{this.items.asmserial.pattern}}" {{/if}} 
-                        {{!-- {{#if this.values.asmserial}}value="{{this.values.asmserial}}" {{/if}} --}}
+                    <input type="text" class="form-control qc-form-item" id="asm_serial" name="asm_serial" tag="input"
+                        {{#if this.items.asm_serial.pattern}}pattern="{{this.items.asm_serial.pattern}}" {{/if}} 
+                        {{!-- {{#if this.values.asm_serial}}value="{{this.values.asm_serial}}" {{/if}} --}}
                         ></input>
                 </div>
                 <div style="display:flex;height:1rem">
@@ -183,38 +183,38 @@
             </div>
         </div>
         <div class="form-group row">
-            <label for="makemodel" class="col-sm-1 col-form-label ">Make/Model:</label>
+            <label for="make_model" class="col-sm-1 col-form-label ">Make/Model:</label>
             <div class="col-sm-3 ">
-                <input required type="text" class="form-control qc-form-item" id="makemodel" name="makemodel" {{#if
-                    this.values.makemodel}}value="{{this.values.makemodel}}" {{/if}}></input>
+                <input required type="text" class="form-control qc-form-item" id="make_model" name="make_model" {{#if
+                    this.values.make_model}}value="{{this.values.make_model}}" {{/if}}></input>
             </div>
 
-            {{> drop_down id="operatingsystem" items=this.items.operatingsystems name="Operating System"
-            selected_value=this.values.operatingsystem}}
+            {{> drop_down id="operating_system" items=this.items.operating_systems name="Operating System"
+            selected_value=this.values.operating_system}}
 
-            <label for="msoinstalled" class="col-sm-1 col-form-label ">MS Office</label>
+            <label for="mso_installed" class="col-sm-1 col-form-label ">MS Office</label>
             <div class="col-sm-3">
-                <select required class="custom-select qc-form-item" id="msoinstalled" name="msoinstalled">
+                <select required class="custom-select qc-form-item" id="mso_installed" name="mso_installed">
                     <option value="" selected hidden>Choose...</option>
-                    <option value="true" {{!--{{#if (eq this.values.msoinstalled true)}}selected{{/if}}--}}>YES</option>
-                    <option value="false" {{!-- {{#if (eq this.values.msoinstalled false)}}selected{{/if}} --}}</option>>NO</option>
+                    <option value="true" {{!--{{#if (eq this.values.mso_installed true)}}selected{{/if}}--}}>YES</option>
+                    <option value="false" {{!-- {{#if (eq this.values.mso_installed false)}}selected{{/if}} --}}</option>>NO</option>
                 </select>
             </div>
         </div>
         <div class="form-group row">
-            {{> drop_down id="processortype" items=this.items.processortypes name="Processor Type"
-            selected_value=this.values.processortype}}
-            {{> drop_down id="ramtype" items=this.items.ramtypes name="RAM Type" selected_value=this.values.ramtype}}
-            {{> drop_down id="drivetype" items=this.items.drivetypes name="Drive Type"
-            selected_value=this.values.drivetype}}
+            {{> drop_down id="processor_type" items=this.items.processor_types name="Processor Type"
+            selected_value=this.values.processor_type}}
+            {{> drop_down id="ram_type" items=this.items.ram_types name="RAM Type" selected_value=this.values.ram_type}}
+            {{> drop_down id="drive_type" items=this.items.drive_types name="Drive Type"
+            selected_value=this.values.drive_type}}
         </div>
 
         <div class="form-group row">
-            {{> drop_down id="processorgen" items=this.items.processorgens name="Processor Gen"
-            selected_value=this.values.processorgen}}
-            {{> drop_down id="ramsize" items=this.items.ramsizes name="RAM Size" selected_value=this.values.ramsize}}
-            {{> drop_down id="drivesize" items=this.items.drivesizes name="Drive Size"
-            selected_value=this.values.drivesize}}
+            {{> drop_down id="processor_gen" items=this.items.processor_gens name="Processor Gen"
+            selected_value=this.values.processor_gen}}
+            {{> drop_down id="ram_size" items=this.items.ram_sizes name="RAM Size" selected_value=this.values.ram_size}}
+            {{> drop_down id="drive_size" items=this.items.drive_sizes name="Drive Size"
+            selected_value=this.values.drive_size}}
         </div>
 
         <div id="qc-checks" class="horizontal-center-outer">
@@ -245,10 +245,10 @@
                         question_id="{{question_id}}" 
                         
                         {{#if question.hidden}}
-                        hidden whitelist_buildtypes="none"
+                        hidden whitelist_build_types="none"
                         {{else}}
-                            {{#if question.whitelist_buildtypes}}
-                            whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
+                            {{#if question.whitelist_build_types}}
+                            whitelist_build_types="{{#each question.whitelist_build_types}}{{this}} {{/each}}"
                             {{/if}}
                         {{/if}}
                         >
@@ -261,10 +261,10 @@
                         class="qc-check-answer"
                         
                         {{#if question.hidden}}
-                        hidden whitelist_buildtypes="none"
+                        hidden whitelist_build_types="none"
                         {{else}}
-                            {{#if question.whitelist_buildtypes}}
-                            whitelist_buildtypes="{{#each question.whitelist_buildtypes}}{{this}} {{/each}}"
+                            {{#if question.whitelist_build_types}}
+                            whitelist_build_types="{{#each question.whitelist_build_types}}{{this}} {{/each}}"
                             {{/if}}
                         {{/if}}
                         >
@@ -317,8 +317,8 @@
         
 
         <div class="horizontal-center-outer">
-            <label class="horizontal-center-inner" for="technotes">Tech Notes:</label>
-            <textarea class="horizontal-center-inner col-sm-6 qc-form-item" id="technotes" name="technotes" rows="3"></textarea>
+            <label class="horizontal-center-inner" for="tech_notes">Tech Notes:</label>
+            <textarea class="horizontal-center-inner col-sm-6 qc-form-item" id="tech_notes" name="tech_notes" rows="3"></textarea>
         </div>
 
         <div class="horizontal-center-outer" style="margin-top:1em" id="control-panel">

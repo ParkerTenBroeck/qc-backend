@@ -11,10 +11,10 @@
             <image height="100%" src="/res/logo.png"></image>
             <div
                 class="header-information">
-                <p class="header-buildtype">QC Form - {{lookup
-                    (lookup this.items.buildtypes.values this.values.buildtype) "name"}}</p>
+                <p class="header-build_type">QC Form - {{lookup
+                    (lookup this.items.build_types.values this.values.build_type) "name"}}</p>
                 <p class="header-location">QC Location - {{lookup (lookup
-                    this.items.buildlocations.values this.values.buildlocation) "name"}}</p>
+                    this.items.build_locations.values this.values.build_location) "name"}}</p>
         
             </div>
             {{#with (is_complete this.values) as |error_message|}}
@@ -101,50 +101,50 @@
             </div>
             <div class="information-container">
                 <p style="margin-top:0px">
-                    <span style="font-weight: bold;">Make/Model:</span> <span style="text-decoration: underline;">{{this.values.makemodel}}</span>
+                    <span style="font-weight: bold;">Make/Model:</span> <span style="text-decoration: underline;">{{this.values.make_model}}</span>
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Sales Order:</span> <span style="text-decoration: underline;">{{this.values.salesorder}}</span>
+                    <span style="font-weight: bold;">Sales Order:</span> <span style="text-decoration: underline;">{{this.values.sales_order}}</span>
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Started:</span> <span id="creationdate" style="text-decoration: underline;">{{this.values.creationdate}}</span>
+                    <span style="font-weight: bold;">Started:</span> <span id="creation_date" style="text-decoration: underline;">{{this.values.creation_date}}</span>
                     <script>
-                        let date_str = "{{this.values.creationdate}}";
+                        let date_str = "{{this.values.creation_date}}";
                         console.log(date_str);
                         let date = new Date(date_str);
                         let date_fmt = date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
-                        document.getElementById("creationdate").innerText = date_fmt;
+                        document.getElementById("creation_date").innerText = date_fmt;
                     </script>
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Finished:</span> <span id="lastupdated" style="text-decoration: underline;">{{this.values.lastupdated}}</span>
+                    <span style="font-weight: bold;">Finished:</span> <span id="last_updated" style="text-decoration: underline;">{{this.values.last_updated}}</span>
                     <script>
-                        let finished_str = "{{this.values.lastupdated}}";
+                        let finished_str = "{{this.values.last_updated}}";
                         let finished = new Date(finished_str);
                         let finished_fmt = finished.getFullYear() + "/" + (finished.getMonth() + 1) + "/" + finished.getDate();
-                        document.getElementById("lastupdated").innerText = finished_fmt;
+                        document.getElementById("last_updated").innerText = finished_fmt;
                     </script>
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Oem Serial:</span>  <span style="text-decoration: underline;">{{this.values.oemserial}}</span>
+                    <span style="font-weight: bold;">Oem Serial:</span>  <span style="text-decoration: underline;">{{this.values.oem_serial}}</span>
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Item Serial:</span>  <span style="text-decoration: underline;">{{this.values.itemserial}}</span>
+                    <span style="font-weight: bold;">Item Serial:</span>  <span style="text-decoration: underline;">{{this.values.item_serial}}</span>
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Asm Serial:</span>  <span style="text-decoration: underline;">{{this.values.asmserial}}</span>
+                    <span style="font-weight: bold;">Asm Serial:</span>  <span style="text-decoration: underline;">{{this.values.asm_serial}}</span>
                 </p>
                 <p>
                     <span style="font-weight: bold;">Qc Serial:</span>  <span style="text-decoration: underline;">{{this.values.id}}</span>
                 </p>
                 <p>
-                    {{#with (lookup this.items.operatingsystems.values this.values.operatingsystem) as |operatingsystem|}}
-                    <span style="font-weight: bold;">Operating System:</span> <span style="text-decoration: underline;">{{operatingsystem.name}}</span>
+                    {{#with (lookup this.items.operating_systems.values this.values.operating_system) as |operating_system|}}
+                    <span style="font-weight: bold;">Operating System:</span> <span style="text-decoration: underline;">{{operating_system.name}}</span>
                     {{/with}}
                 </p>
                 <p>
                     <span style="font-weight: bold;">MSO Installed:</span> 
-                    {{#if this.values.msoinstalled}}
+                    {{#if this.values.mso_installed}}
                     <image class="inline-answer-explanations" src="/res/square_pass.svg" />
                     {{else}}
                     <image class="inline-answer-explanations" src="/res/square_fail.svg" />
@@ -152,28 +152,28 @@
                 </p>
                 <p>
 
-                    {{#with (lookup this.items.processortypes.values this.values.processortype) as |processortype|}}
-                        {{#with (lookup @root.items.processorgens.values @root.values.processorgen) as |processorgen|}}
-                        <span style="font-weight: bold;">Processor:</span> <span style="text-decoration: underline;">{{processortype.name}} {{processorgen.name}}</span>
+                    {{#with (lookup this.items.processor_types.values this.values.processor_type) as |processor_type|}}
+                        {{#with (lookup @root.items.processor_gens.values @root.values.processor_gen) as |processor_gen|}}
+                        <span style="font-weight: bold;">Processor:</span> <span style="text-decoration: underline;">{{processor_type.name}} {{processor_gen.name}}</span>
                         {{/with}}
                     {{/with}}
                 </p>
                 <p>
-                    {{#with (lookup this.items.ramtypes.values this.values.ramtype) as |ramtype|}}
-                        {{#with (lookup @root.items.ramsizes.values @root.values.ramsize) as |ramsize|}}
-                        <span style="font-weight: bold;">Ram:</span> <span style="text-decoration: underline;">{{ramsize.name}} {{ramtype.name}}</span>
+                    {{#with (lookup this.items.ram_types.values this.values.ram_type) as |ram_type|}}
+                        {{#with (lookup @root.items.ram_sizes.values @root.values.ram_size) as |ram_size|}}
+                        <span style="font-weight: bold;">Ram:</span> <span style="text-decoration: underline;">{{ram_size.name}} {{ram_type.name}}</span>
                         {{/with}}
                     {{/with}}
                 </p>
                 <p>
-                    {{#with (lookup this.items.drivetypes.values this.values.drivetype) as |drivetype|}}
-                        {{#with (lookup @root.items.drivesizes.values @root.values.drivesize) as |drivesize|}}
-                        <span style="font-weight: bold;">Drive Size:</span> <span style="text-decoration: underline;">{{drivesize.name}} {{drivetype.name}}</span>
+                    {{#with (lookup this.items.drive_types.values this.values.drive_type) as |drive_type|}}
+                        {{#with (lookup @root.items.drive_sizes.values @root.values.drive_size) as |drive_size|}}
+                        <span style="font-weight: bold;">Drive Size:</span> <span style="text-decoration: underline;">{{drive_size.name}} {{drive_type.name}}</span>
                         {{/with}}
                     {{/with}}
                 </p>
                 <p>
-                    <span style="font-weight: bold;">Initials QC1:</span> <span style="text-decoration: underline;">{{this.values.qc1initial}}</span>,  <span style="font-weight: bold;">QC2:</span> <span style="text-decoration: underline;">{{this.values.qc2initial}}</span>
+                    <span style="font-weight: bold;">Initials QC1:</span> <span style="text-decoration: underline;">{{this.values.qc1_initial}}</span>,  <span style="font-weight: bold;">QC2:</span> <span style="text-decoration: underline;">{{this.values.qc2_initial}}</span>
                 </p>
             </div>
         </div>

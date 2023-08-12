@@ -104,7 +104,7 @@ echo %first%with %numcores% cores at %clockspeed%
 
 ECHO.
 :: replace
-start chrome.exe -incognito --new-window "http://192.168.1.117:8000/qc_form.html?download_id_on_save&makemodel=%model%&oemserial=%serial%&operatingsystem=Windows10"
+start chrome.exe -incognito --new-window "http://192.168.1.117:8000/qc_form.html?download_id_on_save&make_model=%model%&oem_serial=%serial%&operating_system=Windows10"
 pause
 
 exit

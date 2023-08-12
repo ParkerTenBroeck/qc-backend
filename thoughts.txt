@@ -1,4 +1,4 @@
-the first qc1 script launches the page with autofilled oemserial, makemodel and buildtype.
+the first qc1 script launches the page with autofilled oem_serial, make_model and build_type.
 
 once the qc1 sheet is ready for the next step save will be pressed and the current form will be saved to the database.
 a single file called qc_ident will be saved to the downloads folder of the qced computer.
