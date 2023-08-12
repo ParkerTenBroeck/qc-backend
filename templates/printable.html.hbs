@@ -135,6 +135,9 @@
                     <span style="font-weight: bold;">Asm Serial:</span>  <span style="text-decoration: underline;">{{this.values.asmserial}}</span>
                 </p>
                 <p>
+                    <span style="font-weight: bold;">Qc Serial:</span>  <span style="text-decoration: underline;">{{this.values.id}}</span>
+                </p>
+                <p>
                     {{#with (lookup this.items.operatingsystems.values this.values.operatingsystem) as |operatingsystem|}}
                     <span style="font-weight: bold;">Operating System:</span> <span style="text-decoration: underline;">{{operatingsystem.name}}</span>
                     {{/with}}
