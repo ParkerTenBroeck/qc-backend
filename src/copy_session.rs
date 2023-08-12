@@ -132,7 +132,6 @@ pub async fn open_new_session(
         Box::pin(async move {
             let val = async {
                 while session.live.load(std::sync::atomic::Ordering::Relaxed){
-                
                     let shutdown = shutdown.clone();
                     select! {
                         Some(next_recv) = stream.next() => {
@@ -144,7 +143,6 @@ pub async fn open_new_session(
                                     session.notify_change.notify_waiters();
 
                                     rocket::tokio::task::yield_now().await;
-                                    
 
                                     let data = serde_json::to_string(&*session.data.lock().await).unwrap_or(String::new());
                                     stream.send(ws::Message::Text(data)).await?;
@@ -153,8 +151,8 @@ pub async fn open_new_session(
                                 _ => {}
                             }
                         }
-                        _ = session.notify_change.notified() => {  
-                            let data = session.data.lock().await;  
+                        _ = session.notify_change.notified() => {
+                            let data = session.data.lock().await;
                             let data = serde_json::to_string(&*data).unwrap_or(String::new());
                             stream.send(ws::Message::Text(data)).await?;
                         }
@@ -359,10 +357,8 @@ pub async fn session_single_consumer(
             }
 
             ret
- 
             }.await;
 
-            
             let mut lock = sessions.sessions.write().await;
             if let Some(entry) = lock.get(&session_id){
                 if Arc::strong_count(entry) == 1{

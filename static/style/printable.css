@@ -54,17 +54,19 @@ body {
 }
 
 .header-location {
+    white-space: nowrap;
     font-size: 14px;
     font-weight: bold;
     margin: 0;
     vertical-align: bottom;
 }
 
-.header-build_type {
+.header-build-type {
     font-size: 14px;
     font-weight: bold;
     margin: 0;
     bottom: 0px;
+    white-space: nowrap;
     position: absolute;
 }
 

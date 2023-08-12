@@ -1,8 +1,7 @@
 
 
 let questions = params[0].questions;
-let qc1 = params[1];
-let qc2 = params[2];
+let qc_answers = params[1];
 
 let sections;
 if params[0].contains("pdf_form") {
@@ -18,7 +17,7 @@ for i in range(sections.len() - 1, -1, -1){
     for j in range(sections[i].questions.len() - 1, -1, -1){
         let question = sections[i].questions[j];
         
-        if !qc1.contains(question) && !qc2.contains(question){
+        if !qc_answers.contains(question){
             sections[i].questions.remove(j);
         }
     }

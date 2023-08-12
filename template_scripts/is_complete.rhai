@@ -1,18 +1,9 @@
 
 let values = params[0];
 
-if values.contains("qc1"){
-    for val in values.qc1.values(){
-        if val == 2{
-            return "Fail";
-        }
-    }
-}
-
-
-if values.contains("qc2"){
-    for val in values.qc2.values(){
-        if val == 2{
+if values.contains("qc_answers"){
+    for val in values.qc_answers.values(){
+        if val.contains('f') || val.contains('F'){
             return "Fail";
         }
     }
@@ -32,9 +23,8 @@ let fields = [
     "operating_system",
     "processor_gen",
     "processor_type",
-    "qc1",
+    "qc_answers",
     "qc1_initial",
-    "qc2",
     "qc2_initial",
     "ram_size",
     "ram_type",
@@ -62,18 +52,8 @@ for key in fields{
     }
 }
 
-if values.qc1.len() != values.qc2.len(){
-    return "Incomplete";
-}
-
-for val in values.qc1.values(){
-    if val == 0{
-        return "Incomplete";
-    }
-}
-
-for val in values.qc2.values(){
-    if val == 0{
+for val in values.qc_answers.values(){
+    if val.contains('i') || val.contains('I'){
         return "Incomplete";
     }
 }

@@ -61,9 +61,8 @@ pub struct QCForm {
     pub operating_system: String,
     pub processor_gen: String,
     pub processor_type: String,
-    pub qc1: QCChecklist,
+    pub qc_answers: QCChecklist,
     pub qc1_initial: String,
-    pub qc2: QCChecklist,
     pub qc2_initial: Option<String>,
 
     pub ram_size: String,
@@ -96,9 +95,8 @@ pub struct QCFormUpdate {
     pub operating_system: Option<String>,
     pub processor_gen: Option<String>,
     pub processor_type: Option<String>,
-    pub qc1: Option<QCChecklist>,
+    pub qc_answers: Option<QCChecklist>,
     pub qc1_initial: Option<String>,
-    pub qc2: Option<QCChecklist>,
     #[serde(deserialize_with = "deserialize_optional_field")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub qc2_initial: Option<Option<String>>,
@@ -187,16 +185,12 @@ macro_rules! dyn_qc_form_column {
                 let $ident = qc_forms::processor_type;
                 $succ_text
             }
-            "qc1" => {
-                let $ident = qc_forms::qc1;
+            "qc_answers" => {
+                let $ident = qc_forms::qc_answers;
                 $succ_text
             }
             "qc1_initial" => {
                 let $ident = qc_forms::qc1_initial;
-                $succ_text
-            }
-            "qc2" => {
-                let $ident = qc_forms::qc2;
                 $succ_text
             }
             "qc2_initial" => {
@@ -671,7 +665,7 @@ mod tests {
 
     use crate::{
         database::{QCForm, Time},
-        qc_checklist::{QCChecklist, QuestionAnswer},
+        qc_checklist::{QCChecklist, QuestionAnswer, QuestionAnswers},
         schema::qc_forms::{self, drive_type},
     };
 
@@ -850,7 +844,7 @@ mod tests {
                 operating_system: random_val(rng, "operating_systems", &conf),
                 processor_gen: random_val(rng, "processor_gens", &conf),
                 processor_type: random_val(rng, "processor_types", &conf),
-                qc1: {
+                qc_answers: {
                     let mut checks = QCChecklist::new();
 
                     for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
@@ -865,31 +859,15 @@ mod tests {
                             })
                             .unwrap_or(true)
                         {
-                            checks.0.insert(id.to_owned(), random_question(rng));
+                            checks.0.insert(
+                                id.to_owned(),
+                                QuestionAnswers([random_question(rng), random_question(rng)]),
+                            );
                         }
                     }
                     checks
                 },
                 qc1_initial: random_str::<Initial>(rng),
-                qc2: {
-                    let mut checks = QCChecklist::new();
-                    for (id, check) in conf["qc_checks"]["questions"].as_object().unwrap().iter() {
-                        if check
-                            .get("whitelist_build_types")
-                            .map(|f| {
-                                f.as_array()
-                                    .map(|f| {
-                                        f.contains(&serde_json::Value::String(build_type.clone()))
-                                    })
-                                    .unwrap()
-                            })
-                            .unwrap_or(true)
-                        {
-                            checks.0.insert(id.to_owned(), random_question(rng));
-                        }
-                    }
-                    checks
-                },
                 qc2_initial: if rng.gen::<bool>() {
                     None
                 } else {

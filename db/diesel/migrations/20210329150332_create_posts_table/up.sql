@@ -14,9 +14,8 @@ CREATE TABLE qc_forms (
     operating_system VARCHAR NOT NULL,
     processor_gen VARCHAR NOT NULL,
     processor_type VARCHAR NOT NULL,
-    qc1 VARCHAR NOT NULL,
+    qc_answers VARCHAR NOT NULL,
     qc1_initial VARCHAR NOT NULL,
-    qc2 VARCHAR NOT NULL,
     qc2_initial VARCHAR,
 
     ram_size VARCHAR NOT NULL,

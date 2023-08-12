@@ -9,12 +9,10 @@ use diesel::{
 };
 use serde_json::Value;
 
-
 #[derive(Debug, Default, Clone, Serialize, Deserialize, AsExpression, FromSqlRow)]
 #[serde(crate = "rocket::serde")]
 #[diesel(sql_type = diesel::sql_types::Text)]
 pub struct JsonText(pub Value);
-
 
 impl ToSql<Text, Sqlite> for JsonText {
     fn to_sql<'b>(

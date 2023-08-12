@@ -14,12 +14,12 @@ use rocket_dyn_templates::Template;
 
 pub mod database;
 pub mod gen_pdf;
+pub mod json_text;
 pub mod qc_checklist;
 pub mod qurry_builder;
 pub mod schema;
 pub mod templates;
 pub mod time;
-pub mod json_text;
 
 pub mod copy_session;
 
@@ -55,7 +55,9 @@ impl<'r> FromRequest<'r> for &'r Config {
 }
 
 mod helper {
-    use rocket_dyn_templates::handlebars::{Helper, Handlebars, Context, RenderContext, Output, HelperResult, handlebars_helper};
+    use rocket_dyn_templates::handlebars::{
+        handlebars_helper, Context, Handlebars, Helper, HelperResult, Output, RenderContext,
+    };
     use serde_json::Value;
 
     pub fn json_stringify(
@@ -65,7 +67,10 @@ mod helper {
         _rc: &mut RenderContext<'_, '_>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let json = h.param(0).and_then(|v|serde_json::to_string(v.value()).ok()).unwrap_or("{}".to_owned());
+        let json = h
+            .param(0)
+            .and_then(|v| serde_json::to_string(v.value()).ok())
+            .unwrap_or("{}".to_owned());
         out.write(&json)?;
         Ok(())
     }
@@ -83,18 +88,23 @@ fn rocket() -> _ {
                 .expect("Failed to load config file. Fatial Error"),
         )
         .attach(Template::custom(|engine| {
-            engine.handlebars
+            engine
+                .handlebars
                 .register_helper("json_stringify", Box::new(helper::json_stringify));
-            engine.handlebars
+            engine
+                .handlebars
                 .register_helper("contains", Box::new(helper::contains));
             engine.handlebars.set_strict_mode(true);
 
             let scripts = std::fs::read_dir("./template_scripts").unwrap();
-            for path in scripts.flatten(){
+            for path in scripts.flatten() {
                 // path.path().file_stem()
-                if let Some(name) = path.path().file_stem().map(|s|s.to_str()).unwrap_or(None){
+                if let Some(name) = path.path().file_stem().map(|s| s.to_str()).unwrap_or(None) {
                     println!("{name}");
-                    engine.handlebars.register_script_helper_file(name, path.path()).unwrap();
+                    engine
+                        .handlebars
+                        .register_script_helper_file(name, path.path())
+                        .unwrap();
                 }
             }
             // engine.handlebars.register_script_helper("name", "script")?;

@@ -104,9 +104,9 @@
             "correct_time": {"question": "Correct Time/Date/Time Zone (EST)"},
             "battery_health": {"whitelist_build_types": ["laptop", "tablet"], "question": "Sufficent battery life"},
             "mso_installed": {"question": "MS Office Activated + Shortcut Pinned"},
-            "final_visual_check": {"question": "Visual (cleanliness, screws, disks removed"},
+            "final_visual_check": {"hidden": true, "question": "Visual (cleanliness, screws, disks removed"},
             "keyboard_trackpad_clean": {"whitelist_build_types": ["laptop", "tablet"], "question": "Keyboard/Mouse - Clean/Working"},
-            "correct_power_adaptor": {"whitelist_build_types": ["laptop", "tablet"], "question": "Correct charger - Clean/Working"},
+            "correct_power_adaptor": {"hidden": true, "whitelist_build_types": ["laptop", "tablet"], "question": "Correct charger - Clean/Working"},
             "verify_correct_sales_order": {"question": "Items match Sales Order - Verified"},
             "hidden_old": {"pdf_question": "This will show only on the pdf", "question": "This question will still render corectly on the PDF and form for old things but wont be used for new things this question is also very long and will need to be wrapped in almost every situation so is a good test to see what ling questions will to ", "hidden": true}
         },
@@ -115,6 +115,7 @@
                 "heading": "POST/BIOS/Hardware Verification", 
                 "questions": [
                     "hidden_old",
+                    "verify_correct_sales_order",
                     "case_damage_check", 
                     "keboard_trackpad_damaged", 
                     "touchscreen_check", 
@@ -138,6 +139,7 @@
                 "heading": "Final Inspection",
                 "questions": [
                     "image_loaded",
+                    "keyboard_trackpad_clean",
                     "attached_screen_check",
                     "additional_programs_installed",
                     "all_usb_working",
@@ -149,7 +151,9 @@
                     "cd_dvd_working",
                     "correct_time",
                     "battery_health",
-                    "mso_installed"
+                    "correct_power_adaptor",
+                    "mso_installed",
+                    "final_visual_check"
                 ]
             }
         ],

@@ -62,33 +62,48 @@ async function generateTableFromJizml(jsonList) {
             row.appendChild(cell);
         }
 
-        var totals = [0, 0, 0, 0];
-        var qc_check_1 = jsonObj["qc1"];
-        var qc_check_2 = jsonObj["qc2"];
-
-        for (var key in qc_check_1) {
-            totals[qc_check_1[key]]++;
+        var total_passes = 0;
+        var total_fails = 0;
+        var total_nas = 0;
+        var total_incomplete = 0;
+        let answers = jsonObj["qc_answers"];
+        for (var key in answers) {
+            let val = answers[key];
+            // console.log(key);
+            for(var char_i = 0; char_i < val.length; char_i ++){
+                let char = val.charAt(char_i);
+                switch (char){
+                    case 'p':
+                    case 'P':
+                        total_passes += 1;
+                        break;
+                    case 'f':
+                    case 'F':
+                        total_fails += 1;
+                        break;
+                    case 'n':
+                    case 'N':
+                        total_nas += 1;
+                        break;
+                    case 'i':
+                    case 'I':
+                        total_incomplete += 1;
+                        break;
+                }
+            }
         }
-        for (var key in qc_check_2) {
-            totals[qc_check_2[key]]++;
-        }
-
-        var incomplete = totals[0];
-        var passes = totals[1];
-        var fails = totals[2];
-        var nas = totals[3];
 
         var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(passes));
+        cell.appendChild(document.createTextNode(total_passes));
         row.appendChild(cell);
         var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(fails));
+        cell.appendChild(document.createTextNode(total_fails));
         row.appendChild(cell);
         var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(nas));
+        cell.appendChild(document.createTextNode(total_nas));
         row.appendChild(cell);
         var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(incomplete));
+        cell.appendChild(document.createTextNode(total_incomplete));
         row.appendChild(cell);
 
         // Append the row to the table body

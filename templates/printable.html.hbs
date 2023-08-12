@@ -11,7 +11,7 @@
             <image height="100%" src="/res/logo.png"></image>
             <div
                 class="header-information">
-                <p class="header-build_type">QC Form - {{lookup
+                <p class="header-build-type">QC Form - {{lookup
                     (lookup this.items.build_types.values this.values.build_type) "name"}}</p>
                 <p class="header-location">QC Location - {{lookup (lookup
                     this.items.build_locations.values this.values.build_location) "name"}}</p>
@@ -41,7 +41,7 @@
         </p>
         <div class="content-container">
             <div class="answers-content-container">
-                {{#each (filter_questions this.items.qc_checks this.values.qc1 this.values.qc2) as |section|}}
+                {{#each (filter_questions this.items.qc_checks this.values.qc_answers) as |section|}}
                 <p style="font-weight:bold"
                 {{#if @first}}
                 {{else}}
@@ -53,38 +53,39 @@
                     {{#with (lookup @root.items.qc_checks.questions question_id) as |question|}}
                     {{!-- {{question_id}} --}}
                     {{#*inline "answer"}}
-
-                    {{#if (eq qc1 1)}}
+                    {{#with (string_to_arr answers) as |qc|}}
+                    {{#if (eq qc.0 "p")}}
                     <image class="question-answer checkbox" src="/res/square_pass.svg" />
                     {{else}}
-                    {{#if (eq qc1 2)}}
+                    {{#if (eq qc.0 "f")}}
                     <image class="question-answer checkbox" src="/res/square_fail.svg" />
                     {{else}}
                     <image class="question-answer checkbox" src="/res/square_empty.svg" />
                     {{/if}}
                     {{/if}}
 
-                    {{#if (eq qc2 1)}}
+                    {{#if (eq qc.1"p")}}
                     <image class="question-answer checkbox" src="/res/circle_pass.svg" />
                     {{else}}
-                    {{#if (eq qc2 2)}}
+                    {{#if (eq qc.1 "f")}}
                     <image class="question-answer checkbox" src="/res/circle_fail.svg" />
                     {{else}}
                     <image class="question-answer checkbox" src="/res/circle_empty.svg" />
                     {{/if}}
                     {{/if}}
 
-                    {{#if (or (eq qc1 3) (eq qc2 3))}}
+                    {{#if (or (eq qc.0 "n") (eq qc.1 "n"))}}
                     <p class="question-answer text-strike-through">N/A</p>
                     {{else}}
                     <p class="question-answer">N/A</p>
                     {{/if}}
-
+                    
+                    {{/with}}
                     {{/inline}}
 
                     <div class="question-container">
                     <div class="question-answers-container">
-                        {{> answer qc1=(lookup @root.values.qc1 question_id) qc2=(lookup @root.values.qc2 question_id)}}
+                        {{> answer answers=(lookup @root.values.qc_answers question_id)}}
                     </div>
                     {{#if question.pdf_question}}
                     <p style="margin-left:10px">{{question.pdf_question}}</p>

@@ -29,7 +29,6 @@ async function save_form() {
 
 
     post = await post.json();
-    console.log(post);
     
     edit_id = post.id;
     if (download_id_on_save){
@@ -73,7 +72,7 @@ function download_id(id){
 }
 
 function update_form_values(json) {
-    let qc = {};
+    let qc_answers = null;
     Object.entries(json).forEach((entry) => {
         const [key, value] = entry;
         switch (key) {
@@ -83,11 +82,8 @@ function update_form_values(json) {
                     edit_id = id;
                 }
                 break;
-            case "qc1":
-                qc["qc1"] = value;
-                break;
-            case "qc2":
-                qc["qc2"] = value;
+            case "qc_answers":
+                qc_answers = value;
                 break;
             case "metadata":
                 metadata = value;
@@ -107,8 +103,8 @@ function update_form_values(json) {
         }
     });
 
-    if (qc.qc1 != null || qc.qc2 != null){
-        update_qc_questions(qc, json.id != null);
+    if (qc_answers != null){
+        update_qc_questions(qc_answers, json.id != null);
     }
 }
 
@@ -120,28 +116,30 @@ function update_qc_questions(qc, only_show_given){
         let question = questions[i];
         let question_id = question.getAttribute("question_id");
         
-        if(qc.qc1[question_id] != null){
+        if(qc[question_id] != null){
+            let qc1_answer = qc[question_id][0];
             let q1 = question.getElementsByClassName('qc1');
             q1[0].checked = false;
             q1[1].checked = false;
             q1[2].checked = false;
-            if (qc.qc1[question_id] > 0 && qc.qc1[question_id] <= 3 ){
-                q1[qc.qc1[question_id]-1].checked = true;
-            }
-        }
-        if(qc.qc2[question_id] != null){
+            q1[3].checked = false;
+            question.querySelector(".qc1[value='"+qc1_answer+"']").checked = true;
+
+            
+            let qc2_answer = qc[question_id][1];
             let q2 = question.getElementsByClassName('qc2');
             q2[0].checked = false;
             q2[1].checked = false;
             q2[2].checked = false;
-            if (qc.qc2[question_id] > 0 && qc.qc2[question_id] <= 3 ){
-                q2[qc.qc2[question_id]-1].checked = true;
-            }
+            q2[3].checked = false;
+            question.querySelector(".qc2[value='"+qc2_answer+"']").checked = true;
         }
 
         if (only_show_given){
-            let hide = qc.qc2[question_id] == null && qc.qc2[question_id] == null ;
+            let hide = qc[question_id] == null;
             let question = document.querySelectorAll("[question_id='"+question_id+"']");
+            
+            console.log(question_id + " " + hide)
             for(let i = 0; i < question.length; i ++){
                 if (hide){
                     question[i].setAttribute("hidden", "");
@@ -167,7 +165,9 @@ function check_form() {
 
 function form_to_json(){
 
-    let form = collect_qc_questions();
+    let form = {};
+    form.qc_answers = collect_qc_questions();
+
     let form_items = document.getElementsByClassName("qc-form-item");
 
     for(let i = 0; i < form_items.length; i ++){
@@ -180,6 +180,8 @@ function form_to_json(){
                     form[item.id] = item.value;
                 }
             }
+        }else{
+            form[item.id] = null;
         }
     }
 
@@ -193,9 +195,7 @@ function form_to_json(){
 
 function collect_qc_questions(){
     let questions = document.getElementsByClassName("qc-check-answer");
-
-    let qc1 = {};
-    let qc2 = {};
+    let answers = {};
 
     for(let i = 0; i < questions.length; i ++){
         let question = questions[i];
@@ -206,30 +206,18 @@ function collect_qc_questions(){
         if (key == null || key.trim().length == 0){
             continue;
         }
-        let qc1_val = question.querySelector('.qc1:checked');
+        let qc1_val = question.querySelector('.qc1:checked').value;
         if (qc1_val == null){
-            qc1_val = 0;
-        }else{
-            qc1_val = parseInt(qc1_val.value);
+            qc1_val = "i";
         }
-        let qc2_val = question.querySelector('.qc2:checked');
+        let qc2_val = question.querySelector('.qc2:checked').value;
         if (qc2_val == null){
-            qc2_val = 0;
-        }else{
-            qc2_val = parseInt(qc2_val.value);
+            qc2_val = "i";
         }
-        qc1[key] = qc1_val;
-        qc2[key] = qc2_val;
-    }
 
-    let json = {};
-    if (Object.keys(qc1).length > 0){
-        json.qc1 = qc1;
+        answers[key] = qc1_val + qc2_val;
     }
-    if (Object.keys(qc2).length > 0){
-        json.qc2 = qc2;
-    }
-    return json;
+    return answers;
 }
 
 function update_build_type() {

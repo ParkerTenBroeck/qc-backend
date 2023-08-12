@@ -274,10 +274,19 @@
                                 <input 
                                     class="{{qc}} radio-btn radio-pass" 
                                     type="radio" 
+                                    id="{{qc}}-incomplete-{{question_id}}" 
+                                    name="{{qc}}-{{question_id}}"
+                                    checked
+                                    style="display:none"
+                                    value="i"
+                                    >
+                                
+                                <input 
+                                    class="{{qc}} radio-btn radio-pass" 
+                                    type="radio" 
                                     id="{{qc}}-pass-{{question_id}}" 
                                     name="{{qc}}-{{question_id}}" 
-                                    value="1"
-                                    {{!-- {{#if (eq answer 1)}}checked{{/if}} --}}
+                                    value="p"
                                     >
                                 <label for="{{qc}}-pass-{{question_id}}">Pass</label>
 
@@ -286,8 +295,7 @@
                                     type="radio" 
                                     id="{{qc}}-fail-{{question_id}}" 
                                     name="{{qc}}-{{question_id}}" 
-                                    value="2"
-                                    {{!-- {{#if (eq answer 2)}}checked{{/if}} --}}
+                                    value="f"
                                     >
                                 <label for="{{qc}}-fail-{{question_id}}">Fail</label>
 
@@ -296,16 +304,13 @@
                                     type="radio" 
                                     id="{{qc}}-na-{{question_id}}" 
                                     name="{{qc}}-{{question_id}}" 
-                                    value="3"
-                                    {{!-- {{#if (eq answer 3)}}checked{{/if}} --}}
+                                    value="n"
                                     >
                                 <label for="{{qc}}-na-{{question_id}}">N/A</label>
                             </div>
                             {{/inline}}
                             
-                            {{!-- answer=(lookup @root.values.qc1 question_id) --}}
                             {{> questions qc = "qc1" question_id=question_id}}
-                            {{!-- answer=(lookup @root.values.qc2 question_id)  --}}
                             {{> questions qc = "qc2" question_id=question_id}}
                         </li>
                     {{/with}}
