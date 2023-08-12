@@ -88,11 +88,14 @@
                 {{#if this.values.sales_order}}value="{{this.values.sales_order}}" {{/if}}>
             </div>
 
-            <label for="creation_date" class="col-sm-1 col-form-labe">Date:</label>
+            <div class="col-sm-1">
+                Created:<br/>
+                Updated:
+            </div>
             <div class="col-sm-3">
-                <input class="form-control qc-form-item" readonly id="creation_date" name="creation_date" 
-                {{!-- {{#if this.values.creation_date}}value="{{this.values.creation_date}}" {{/if}} --}}
-                >
+                <input readonly disabled style="height:40%;width:100%;user-select: none" id="creation_date"></input>
+                <input readonly disabled style="height:40%;width:100%;user-select: none" id="last_updated"></input>
+            </div>
             </div>
         </div>
         <div class="form-group row">
@@ -102,7 +105,6 @@
                 <div>
                     <input required type="text" class="form-control qc-form-item" id="oem_serial" name="oem_serial"
                         tag="input" {{#if this.items.oem_serial.pattern}}pattern="{{this.items.oem_serial.pattern}}"{{/if}} 
-                        {{!-- {{#if this.values.oem_serial}}value="{{this.values.oem_serial}}" {{/if}} --}}
                         ></input>
                 </div>
                 <div style="display:flex;height:0">
@@ -196,8 +198,8 @@
             <div class="col-sm-3">
                 <select required class="custom-select qc-form-item" id="mso_installed" name="mso_installed">
                     <option value="" selected hidden>Choose...</option>
-                    <option value="true" {{!--{{#if (eq this.values.mso_installed true)}}selected{{/if}}--}}>YES</option>
-                    <option value="false" {{!-- {{#if (eq this.values.mso_installed false)}}selected{{/if}} --}}</option>>NO</option>
+                    <option value="true">YES</option>
+                    <option value="false">NO</option>
                 </select>
             </div>
         </div>

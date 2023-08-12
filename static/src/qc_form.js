@@ -51,6 +51,8 @@ async function update_form() {
         alert("Failed to update post");
         console.error(res);
     }
+    let json = await res.json();
+    update_form_values(json);
 }
 
 async function load_existing_post() {
@@ -89,7 +91,9 @@ function update_form_values(json) {
                 metadata = value;
                 break
             case "creation_date":
-                document.getElementById(key).value = value;
+            case "last_updated":
+                
+                document.getElementById(key).value = new Date(value).toLocaleString();
                 break;
             default:
                 try {

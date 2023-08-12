@@ -1,7 +1,7 @@
 @page {
     margin: 0;
     padding: 0;
-    size: 210mm 297mm;
+    size: 210mm 296.9mm;
 }
 
 html {
@@ -13,7 +13,7 @@ html {
 body {
     /* border: 1px solid blue; */
     width: 210mm;
-    height: 297mm;
+    height: 296.9mm;
     margin: 0px;
     padding: 0px;
 
@@ -22,7 +22,7 @@ body {
 .border {
     /* outline: 1px solid red; */
     width: calc(210mm - 10mm - 10mm);
-    height: calc(297mm - 10mm - 10mm);
+    height: calc(296.9mm - 10mm - 10mm);
     padding: 10mm;
 }
 

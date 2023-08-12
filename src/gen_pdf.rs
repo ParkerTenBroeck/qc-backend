@@ -7,8 +7,6 @@ use crate::database;
 use crate::database::Db;
 use crate::Config;
 
-type Result<T, E = rocket::response::Debug<diesel::result::Error>> = std::result::Result<T, E>;
-
 #[get("/printable/<id>")]
 pub async fn printable(items: &Config, id: i32, db: Db) -> database::Result<Template> {
     let values = db.get_form(id).await?;

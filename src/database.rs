@@ -601,13 +601,6 @@ async fn timetest(time: String) -> Result<String, String> {
     Ok(time)
 }
 
-#[test]
-fn test() {
-    let val = r#"{"qc1_initial": "test", "qc2_initial": null}"#;
-    let form: QCFormUpdate = serde_json::from_str(val).unwrap();
-    println!("{:#?}", form);
-}
-
 #[post("/update_post/<id>", data = "<update>")]
 async fn update_post(
     db: Db,
