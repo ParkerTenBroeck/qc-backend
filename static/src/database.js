@@ -19,7 +19,7 @@ async function generateTableFromJizml(jsonList) {
         "build_location",
         "qc1_initial",
         "qc2_initial",
-        "rctpackage",
+        "sales_order",
         "item_serial",
         "asm_serial",
         "oem_serial",
@@ -129,24 +129,67 @@ async function order_radio(button) {
     await make_search();
 }
 
-async function make_search() {
-    var search_par = document.getElementById("databse_search_parameters").value;
-    console.log(search_par);
-    var limit = document.getElementById("table_entry_limit").value;
-    limit = parseInt(limit);
-    limit = (limit == null | limit < 0 | isNaN(limit)) ? 0 : limit;
-    var offset = parseInt(document.getElementById("table_entry_page").value) * limit;
-    console.log(offset);
+let search_flag = false;
 
-    let res = await search(limit, search_par, order_table_glob, ascending_glob, offset);
-    console.log(res.status);
-    if (res.status != 200){
-        console.error(res);
-        alert(JSON.stringify(await res.json()));
-    }else{
-        generateTableFromJizml(await res.json());
+async function make_search() {
+
+    //this should be made using atomics... whatever whos counting ;)
+    let before = search_flag;
+    search_flag = true;
+    if (before){
+        console.log("returned");
+        return;
+    }
+
+    while(search_flag){
+        search_flag = false;
+        var search_par = document.getElementById("databse_search_parameters").value;
+
+        let easy_yes_no = document.getElementsByClassName("easy-qurry-yes-no");
+        for (let i = 0; i < easy_yes_no.length; i ++){
+            let item = easy_yes_no[i];
+            let search = "(" + item.getAttribute("value") + ")";
+    
+            let active_value = item.querySelector(".active");
+            if (active_value){
+                if (search_par.length != 0){
+                    search_par += "&";
+                }
+                if (active_value.getAttribute("invert") == "true"){
+                    search_par += "!";
+                }
+                search_par += search;
+            }
+    
+        }    
+    
+        console.log(search_par);
+    
+        console.log(search_par);
+        var limit = document.getElementById("table_entry_limit").value;
+        limit = parseInt(limit);
+        limit = (limit == null | limit < 0 | isNaN(limit)) ? 0 : limit;
+        var offset = parseInt(document.getElementById("table_entry_page").value) * limit;
+        console.log(offset);
+    
+        let res = await search(limit, search_par, order_table_glob, ascending_glob, offset);
+        console.log(res.status);
+        if (res.status != 200){
+            console.error(res);
+            alert(JSON.stringify(await res.json()));
+        }else{
+            generateTableFromJizml(await res.json());
+        }
     }
 }
+
+function converte_base2_size_to_base10(size){
+    let size_catagory = Math.floor((Math.log(size) / Math.log(2)) / 10)
+    let base_value = Math.pow(10, 3*size_catagory);
+    let scalar_component = size/Math.pow(2, size_catagory*10);
+    return base_value * scalar_component;
+}
+
 
 function updateVisibleComumns(current) {
     var table = document.getElementById("qurry_list");

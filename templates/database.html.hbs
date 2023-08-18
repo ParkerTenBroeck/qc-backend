@@ -32,6 +32,81 @@
         <input id="table_entry_page" type="page" class="form-control col-sm-1 rounded" placeholder="page"
             aria-label="limit" aria-describedby="search-database" />
         <button onclick="make_search()">Search</button>
+        
+        <script>
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async function unselectable_radio(radio){
+                if (radio.classList.contains("active")){
+                    await sleep(17);
+                    radio.classList.remove("active");
+                    radio.checked = false;
+                }else{
+                    await sleep(17);
+                }
+                make_search();
+
+            }
+        </script>
+        
+        <div style="padding-left:4px">
+            <div>Incomplete</div>
+            <div data-toggle="buttons" role="toolbar">
+                <div value='qc_answers:"%:i_%"|qc_answers:"%:_i%"' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
+                aria-label="First group" data-toggle="button">
+                    <label invert="false"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio"   name="options" autocomplete="off">Yes</input>
+                    </label>
+                    <label invert="true"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio" name="options" autocomplete="off">No</input>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div style="padding-left:4px">
+            <div>Failed</div>
+            <div data-toggle="buttons" role="toolbar">
+                <div value='qc_answers:"%:f_%"|qc_answers:"%:_f%"' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
+                aria-label="First group" data-toggle="button">
+                    <label invert="false"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio"   name="options" autocomplete="off">Yes</input>
+                    </label>
+                    <label invert="true" onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio" name="options"  autocomplete="off">No</input>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div style="padding-left:4px">
+            <div>Passed</div>
+            <div data-toggle="buttons" role="toolbar">
+                <div value='!(qc_answers:"%:i_%"|qc_answers:"%:_i%"|qc_answers:"%:f_%"|qc_answers:"%:_f%")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
+                aria-label="First group" data-toggle="button">
+                    <label invert="false" onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio"   name="options"  autocomplete="off">Yes</input>
+                    </label>
+                    <label invert="true"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio" name="options" autocomplete="off">No</input>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div style="padding-left:4px">
+            <div>Complete</div>
+            <div data-toggle="buttons" role="toolbar">
+                <div value='!(qc_answers:"%:i_%"|qc_answers:"%:_i%")&!(sales_order=""|qc1_initial=""|asm_serial="")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
+                aria-label="First group" data-toggle="button">
+                    <label invert="false" onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio"   name="options"  autocomplete="off">Yes</input>
+                    </label>
+                    <label invert="true"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio" name="options" autocomplete="off">No</input>
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -93,6 +168,14 @@
 
         </tr>
     </table>
+
+    <div style="display:none">
+        {{#each @root.items.database.order as |column_id|}}
+                {{#with (lookup @root.items.database.columns column_id) as |column| }}
+                
+            {{/with}}
+        {{/each}}
+    </div>
 
 
     <table class="table table-striped" , id="qurry_list">

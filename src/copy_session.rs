@@ -373,7 +373,7 @@ pub async fn session_single_consumer(
 }
 
 pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("test", |rocket| async {
+    AdHoc::on_ignite("Sessions", |rocket| async {
         rocket
             .manage(Sessions::new())
             .mount("/api", routes![open_new_session, session_single_consumer])

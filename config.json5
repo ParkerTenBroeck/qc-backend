@@ -1,0 +1,258 @@
+{
+    "initials": {"pattern": "[A-Z]{2}"},
+    "sales_order": {
+        "pattern": "[0-9]{8}"
+    },
+    "oem_serial": {
+        "pattern": "^(?! ).*(?<! )$"
+    },
+    "make_model": {
+        "pattern": "^(?! ).*(?<! )$"
+    },
+    "item_serial": {"pattern": "[A-Z0-9]+-[0-9]{7}"},
+    "asm_serial": {
+        "pattern": "(CFS|OTR)-[A-Z0-9_]+-[0-9]{5,7}"
+    },
+    "build_locations": {"order": ["NIA", "MIA", "GTA"], "values": {"NIA": {"name": "NIA"}, "MIA": {"name": "MIA"}, "GTA": {"name": "GTA"}}},
+    "build_types": {"order": ["desktop", "laptop", "tablet"], "values": {"desktop": {"name": "Desktop"}, "laptop": {"name": "Laptop"}, "tablet": {"name": "Tablet"}}},
+    "operating_systems": {
+        "order": ["win10", "win11", "linux", "chromeos"],
+        "values": {"win10": {"name": "Windows 10"}, "win11": {"name": "Windows 11"}, "linux": {"name": "Linux"}, "chromeos": {"name": "Chroms OS"}}
+    },
+    "processor_types": {
+        "order": ["corei3", "corei5", "corei7", "corei9", "corei3e", "corei5e", "corei7e", "corei9e"],
+        "values": {
+            "corei3": {"name": "Core i3"},
+            "corei5": {"name": "Core i5"},
+            "corei7": {"name": "Core i7"},
+            "corei9": {"name": "Core i9"},
+            "corei3e": {"name": "Core i3 Equivalent"},
+            "corei5e": {"name": "Core i5 Equivalent"},
+            "corei7e": {"name": "Core i7 Equivalent"},
+            "corei9e": {"name": "Core i9 Equivalent"}
+        }
+    },
+    "ram_types": {"order": ["DDR2", "DDR3", "DDR4", "DDR5"], "values": {"DDR2": {"name": "DDR2"}, "DDR3": {"name": "DDR3"}, "DDR4": {"name": "DDR4"}, "DDR5": {"name": "DDR5"}}},
+    "ram_sizes": {
+        "order": ["GiB001", "GiB002", "GiB004", "GiB008", "GiB012", "GiB016", "GiB024", "GiB032", "GiB048", "GiB064", "GiB128"],
+        "values": {
+            "GiB001": {"name": "1 GiB", "size_bytes": 1073741824, "hidden": true},
+            "GiB002": {"name": "2 GiB", "size_bytes": 2147483648, "hidden": true},
+            "GiB004": {"name": "4 GiB", "size_bytes": 4294967296, "hidden": true},
+            "GiB008": {"name": "8 GiB", "size_bytes": 8589934592},
+            "GiB012": {"name": "12 GiB", "size_bytes": 12884901888},
+            "GiB016": {"name": "16 GiB", "size_bytes": 17179869184},
+            "GiB024": {"name": "24 GiB", "size_bytes": 25769803776},
+            "GiB032": {"name": "32 GiB", "size_bytes": 34359738368},
+            "GiB048": {"name": "48 GiB", "size_bytes": 51539607552, "hidden": true},
+            "GiB064": {"name": "64 GiB", "size_bytes": 68719476736, "hidden": true},
+            "GiB128": {"name": "128 GiB", "size_bytes": 137438953472, "hidden": true}
+        }
+    },
+    "processor_gens": {
+        "order": ["g001", "g002", "g003", "g004", "g005", "g006", "g007", "g008", "g009", "g010", "g011", "g012", "g013", "g014"],
+        "values": {
+            "g001": {"name": "1st Gen"},
+            "g002": {"name": "2nd Gen"},
+            "g003": {"name": "3rd Gen"},
+            "g004": {"name": "4th Gen"},
+            "g005": {"name": "5th Gen"},
+            "g006": {"name": "6th Gen"},
+            "g007": {"name": "7th Gen"},
+            "g008": {"name": "8th Gen"},
+            "g009": {"name": "9th Gen"},
+            "g010": {"name": "10th Gen"},
+            "g011": {"name": "11th Gen"},
+            "g012": {"name": "12th Gen"},
+            "g013": {"name": "13th Gen"},
+            "g014": {"name": "14th Gen"}
+        }
+    },
+    "drive_types": {
+        "order": ["hdd", "ssd", "msata", "m2sata", "m2nvme"],
+        "values": {"hdd": {"name": "Hard Disk Drive"}, "ssd": {"name": "Solid State Drive"}, "msata": {"name": "M Sata"}, "m2sata": {"name": "M.2 Sata"}, "m2nvme": {"name": "NVMe"}}
+    },
+    "drive_sizes": {
+        "order": ["GB128", "GB250", "GB256", "GB320", "GB400", "GB500", "GB600", "GB640", "GB600", "GB720", "GB800", "TB001", "TB002", "TB004"],
+        "values": {
+            "GB128": {"name": "128 GB", "size_bytes": 128000000000},
+            "GB250": {"name": "250 GB", "size_bytes": 250000000000},
+            "GB256": {"name": "256 GB", "size_bytes": 256000000000},
+            "GB320": {"name": "320 GB", "size_bytes": 320000000000},
+            "GB400": {"name": "400 GB", "size_bytes": 400000000000},
+            "GB500": {"name": "500 GB", "size_bytes": 500000000000},
+            "GB600": {"name": "600 GB", "size_bytes": 600000000000},
+            "GB640": {"name": "640 GB", "size_bytes": 640000000000},
+            "GB720": {"name": "720 GB", "size_bytes": 720000000000},
+            "GB800": {"name": "800 GB", "size_bytes": 800000000000},
+            "TB001": {"name": "1 TB", "size_bytes": 1000000000000},
+            "TB002": {"name": "2 TB", "size_bytes": 2000000000000},
+            "TB004": {"name": "4 TB", "size_bytes": 4000000000000}
+        }
+    },
+    "qc_checks": {
+        "questions": {
+            "external_case_damage": {"question": "External case not damaged"},
+            "builtin_lcd_damage": {"question": "Buildin LCD is not damaged", "whitelist_build_types": ["laptop", "tablet"]},
+            "inside_case_clean": {"question": "Inside case cleaned"},
+            "external_cleaned": {"question": "Clean system externally"},
+            "remove_stickers_info": {"question": "Remove stickers or identifying information"},
+            "components_match_spec": {"question": "Components/Parts match build spec"},
+            
+            "post_errors": {"question": "No Post errors"},
+            "cmos_battery": {"question": "Check CMOS battery"},
+            "bios_date": {"question": "Check for correct BIOS date"},
+            "remove_bios_password": {"question": "Remove BIOS password"},
+            "reset_bios_default": {"question": "Reset all BIOS settings to default"},
+            "remove_bios_id_tags": {"question": "Remove unique BIOS ID tags"},
+            "correct_boot_sequence": {"question": "Change boot sequence to HDD,CD,Network"},
+            "set_sata_mode": {"question": "Set SATA mode to AHCI"},
+            
+            "install_image": {"question": "Install Image onto system"},
+            "os_updated": {"question": "OS Updates and Drivers Installed"},
+            "specs_in_os": {"question": "Specs recorded accurately in OS"},
+            "video_output": {"question": "Video output"},
+            "user_input": {"question": "Keyboard and Mouse working"},
+            "touchscreen_user_input": {"question": "Touchscreen functional", "whitelist_build_types": ["laptop", "tablet"]},
+            "harddrive_os_size": {"question": "Correct HD size reported in OS"},
+            "default_programs": {"question": "Set default Programs"},
+            "verify_ports": {"question": "Verify all ports (USB, Video, Sound)"},
+            "sound_output": {"question": "Verify sound output (Internal Speakers)"},
+            "network_connectivity": {"question": "Verify Network connectivity (WiFi/Ethernet)"},
+            "device_errors": {"question": "No Device Manager errors"},
+            "cd_drive": {"question": "Check DVD Drive"},
+            "time_zone": {"question": "Verify Time/Date/Timezone"},
+            "check_battery": {"question": "Check Battery", "whitelist_build_types": ["laptop", "tablet"]},
+            
+            "all_media_removed": {"question": "All Media/Disks removed"},
+            "case_assembled": {"question": "Case screws present"},
+            // "case_damage_check": {"question": "Case - Scratches/Dents/Cracks"},
+            // "keboard_trackpad_damaged": {"whitelist_build_types": ["laptop"], "question": "Keyboard/Touchpad (scratches, worn out, missing key)"},
+            // "touchscreen_check": {"whitelist_build_types": ["laptop", "tablet"], "question": "Touchscreen - fully functional"},
+            // "cleanliness_visual_check": {"question": "Cleanliness - Inside/Outside, Stickers Removed"},
+            // "correct_parts_check": {"question": "RAM/DRIVE - Correct specs/Size in OS"},
+            // "post_error_check": {"question": "POST Errors/RAM seated properly"},
+            // "cmos_check": {"question": "CMOS battery and clock"},
+            // "bios_password_removed": {"question": "BIOS - Password disabled"},
+            // "bios_settings_reset": {"question": "BIOS - Settings reset to factory defaults"},
+            // "bios_tags_removed": {"question": "BIOS - ID tags removed"},
+            // "boot_sequence_correct": {"question": "Boot Sequence: HDD/CD/Network"},
+            // "sata_operation_correct": {"question": "Change SATA to AHCI"},
+            // "image_loaded": {"question": "Correct image loaded onto system"},
+            // "attached_screen_check": {"whitelist_build_types": ["laptop", "tablet"], "question": "Video output (Discolouration, spot, marks)"},
+            // "additional_programs_installed": {"question": "Required programs installed (default/add-ons)"},
+            // "all_usb_working": {"question": "USB ports - Working"},
+            // "all_sound_working": {"question": "Sound/Microphone - Quality"},
+            // "network_connectivity": {"question": "Network connection - Available/Working"},
+            // "webcam_working": {"whitelist_build_types": ["laptop", "tablet"], "question": "Webcam - Available/Working"},
+            // "hid_working": {"whitelist_build_types": ["laptop"], "question": "Keyboard/Mouse/Trackpad - Tested/clean/working"},
+            // "no_device_manager_errrors": {"question": "Device Manager - No errors"},
+            // "cd_dvd_working": {"question": "CD/DVD Drive(s) - Available/Working"},
+            // "correct_time": {"question": "Correct Time/Date/Time Zone (EST)"},
+            // "battery_health": {"whitelist_build_types": ["laptop", "tablet"], "question": "Sufficent battery life"},
+            // "mso_installed": {"question": "MS Office Activated + Shortcut Pinned"},
+            // "final_visual_check": {"hidden": true, "question": "Visual (cleanliness, screws, disks removed"},
+            // "keyboard_trackpad_clean": {"whitelist_build_types": ["laptop", "tablet"], "question": "Keyboard/Mouse - Clean/Working"},
+            // "correct_power_adaptor": {"hidden": true, "whitelist_build_types": ["laptop", "tablet"], "question": "Correct charger - Clean/Working"},
+            // "verify_correct_sales_order": {"question": "Items match Sales Order - Verified"},
+            // "hidden_old": {"pdf_question": "This will show only on the pdf", "question": "This question will still render corectly on the PDF and form for old things but wont be used for new things this question is also very long and will need to be wrapped in almost every situation so is a good test to see what ling questions will to ", "hidden": true}
+        },
+        "tech_form": [
+            {
+                "heading": "Hardware Check", 
+                "questions": [
+                    "external_case_damage",
+                    "builtin_lcd_damage",
+                    "inside_case_clean", 
+                    "external_cleaned", 
+                    "remove_stickers_info", 
+                    "components_match_spec"
+                ]
+            },
+            {
+                "heading": "Pre Installation Check",
+                "questions": [
+                    "post_errors",
+                    "cmos_battery",
+                    "bios_date",
+                    "remove_bios_password",
+                    "reset_bios_default",
+                    "remove_bios_id_tags",
+                    "correct_boot_sequence",
+                    "set_sata_mode"
+                ]
+            },
+            {
+                "heading": "OS Checks",
+                "questions": [
+                    "install_image",
+                    "os_updated",
+                    "specs_in_os",
+                    "video_output",
+                    "user_input",
+                    "touchscreen_user_input",
+                    "harddrive_os_size",
+                    "default_programs",
+                    "verify_ports",
+                    "sound_output",
+                    "network_connectivity",
+                    "device_errors",
+                    "cd_drive",
+                    "time_zone",
+                    "check_battery",
+                ]
+            },
+            {
+                "heading": "Final Checks",   
+                "questions": [
+                    "all_media_removed",
+                    "case_assembled"
+                ]
+            }
+        ],
+        //  pdf_form defineds the order and what section questions will appear on in the printable pdf
+        //  the format of pdf_form is the same as tech_form.
+        //  if pdf_form is left blank (as it is now) tech_form will be used as the default
+        //  if needed make sure to remove // before pdf_form to properly use it
+        //
+        // "pdf_form": [
+        // ]
+    },
+    "database": {
+        "columns": {
+            "creation_date": {"name": "Created", "show": true, "db_column": true},
+            "build_type": {"name": "Build Type", "show": true, "db_column": true, "mapping": "build_types"},
+            "build_location": {"name": "Build Location", "db_column": true, "mapping": "build_locations"},
+            "qc1_initial": {"name": "QC1 Initial", "db_column": true},
+            "qc2_initial": {"name": "QC2 Initial", "db_column": true},
+            "sales_order": {"name": "Sales Order", "show": true, "db_column": true},
+            "item_serial": {"name": "Item Serial No.", "show": true, "db_column": true},
+            "asm_serial": {"name": "Asm Serial No.", "show": true, "db_column": true},
+            "oem_serial": {"name": "Oem Serial No.", "show": true, "db_column": true},
+            "make_model": {"name": "Make/Model", "show": true, "db_column": true},
+            "operating_system": {"name": "OS", "db_column": true, "mapping": "operating_systems"},
+            "mso_installed": {"name": "MSO Installed", "db_column": true, "mapping": "$bool"},
+            "processor_type": {"name": "Processor Type", "show": true, "db_column": true, "mapping": "processor_types"},
+            "processor_gen": {"name": "Processor Gen", "show": true, "db_column": true, "mapping": "processor_gens"},
+            "drive_type": {"name": "Drive Type", "show": true, "db_column": true, "mapping": "drive_types"},
+            "drive_size": {"name": "Drive Size", "show": true, "db_column": true, "mapping": "drive_sizes"},
+            "ram_size": {"name": "Ram Size", "show": true, "db_column": true, "mapping": "ram_sizes"},
+            "ram_type": {"name": "Ram Type", "show": true, "db_column": true, "mapping": "ram_types"},
+            "tech_notes": {"name": "Tech Notes", "db_column": true},
+
+            "passes": {"name": "Passes", "show": true},
+            "fails": {"name": "Fails", "show": true},
+            "nas": {"name": "N/As", "show": true},
+            "incomplete": {"name": "Incomplete", "show": true}
+        },
+        "order": [
+            "creation_date", "build_type", "build_location", "qc1_initial", "qc2_initial",
+            "sales_order", "item_serial", "asm_serial", "oem_serial", "make_model", "operating_system",
+            "mso_installed", "processor_type", "processor_gen", "drive_type", "drive_size", "ram_type", "ram_size", 
+            "passes", "fails", "nas", "incomplete"
+            ]
+    }
+}
+
+
+

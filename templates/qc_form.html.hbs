@@ -84,7 +84,7 @@
             <label for="sales_order" class="col-sm-1 col-form-label  ">Sales Order</label>
             <div class="col-sm-3">
                 <input class="form-control qc-form-item" id="sales_order" name="sales_order" 
-                {{!-- {{#if this.items.sales_order.pattern}}pattern="{{this.items.sales_order.pattern}}" {{/if}}  --}}
+                {{#if this.items.sales_order.pattern}}pattern="{{this.items.sales_order.pattern}}" {{/if}} 
                 {{#if this.values.sales_order}}value="{{this.values.sales_order}}" {{/if}}>
             </div>
 
@@ -187,8 +187,9 @@
         <div class="form-group row">
             <label for="make_model" class="col-sm-1 col-form-label ">Make/Model:</label>
             <div class="col-sm-3 ">
-                <input required type="text" class="form-control qc-form-item" id="make_model" name="make_model" {{#if
-                    this.values.make_model}}value="{{this.values.make_model}}" {{/if}}></input>
+                <input required type="text" class="form-control qc-form-item" id="make_model" name="make_model" 
+                {{!-- {{#if this.values.make_model}}value="{{this.values.make_model}}" {{/if}} --}}
+                {{#if this.items.make_model.pattern}}pattern="{{this.items.make_model.pattern}}"{{/if}}></input>
             </div>
 
             {{> drop_down id="operating_system" items=this.items.operating_systems name="Operating System"
@@ -332,12 +333,13 @@
             <div class="horizontal-center-inner">
                 <span class="col-sm-1"></span>
                 {{#if this.values.id}}
-                <button type="button" class="btn btn-primary" id="updateButton" onclick="update_form()">UPDATE</button>
+                <button type="button" class="btn btn-primary" id="updateButton" onclick="update_form()">Update</button>
                 <a target="_blank" href="/printable/{{@root.values.id}}?immediate">
-                    <button type="button" class="btn btn-primary" id="printButton">PRINT</button>
+                    <button type="button" class="btn btn-primary" id="printButton">Print</button>
                 <a>
+                <button type="button" class="btn btn-primary" id="downloadidButton" onclick="download_id(edit_id)">Download Id</button>
                 {{else}}
-                <button type="button" class="btn btn-primary" id="saveButton" onclick="save_form()">SAVE</button>
+                <button type="button" class="btn btn-primary" id="saveButton" onclick="save_form()">Save</button>
                 {{/if}}
             </div>
         </div>
@@ -345,7 +347,6 @@
 
     <script>
         var edit_id = {{#if this.values.id}}{{this.values.id}}{{else}}null{{/if}};
-        var download_id_on_save = {{#if this.values.download_id_on_save}}true{{else}}null{{/if}};
         var metadata = {{json_stringify this.values.metadata}}
     </script>
     
@@ -353,7 +354,9 @@
     <script src="/src/sessions.js"></script>
     <script src="/src/qc_form.js"></script>
     <script>
+        {{#if this.values}}
         update_form_values({{json_stringify this.values}})
+        {{/if}}
     </script>
 </body>
 

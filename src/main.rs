@@ -1,6 +1,8 @@
 use std::path::Path;
 
 use rocket::{
+    fairing::AdHoc,
+    figment::value::magic::RelativePathBuf,
     fs::{FileServer, Options},
     request::FromRequest,
 };
@@ -13,7 +15,6 @@ extern crate rocket_sync_db_pools;
 use rocket_dyn_templates::Template;
 
 pub mod database;
-pub mod gen_pdf;
 pub mod json_text;
 pub mod qc_checklist;
 pub mod qurry_builder;
@@ -29,7 +30,7 @@ pub struct Config(pub serde_json::Value);
 impl Config {
     fn load_from_file(path: impl AsRef<Path>) -> Result<Self, Box<dyn std::error::Error>> {
         let contents = std::fs::read_to_string(path)?;
-        Ok(Self(serde_json::from_str(&contents)?))
+        Ok(Self(json5::from_str(&contents)?))
     }
 }
 
@@ -80,38 +81,91 @@ mod helper {
     });
 }
 
+// rocket::log
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .manage(
-            Config::load_from_file("./res/everything.json")
-                .expect("Failed to load config file. Fatial Error"),
-        )
-        .attach(Template::custom(|engine| {
-            engine
-                .handlebars
-                .register_helper("json_stringify", Box::new(helper::json_stringify));
-            engine
-                .handlebars
-                .register_helper("contains", Box::new(helper::contains));
-            engine.handlebars.set_strict_mode(true);
-
-            let scripts = std::fs::read_dir("./template_scripts").unwrap();
-            for path in scripts.flatten() {
-                // path.path().file_stem()
-                if let Some(name) = path.path().file_stem().map(|s| s.to_str()).unwrap_or(None) {
-                    println!("{name}");
-                    engine
-                        .handlebars
-                        .register_script_helper_file(name, path.path())
-                        .unwrap();
+        .attach(AdHoc::try_on_ignite("Config", |rocket| async {
+            let path = rocket
+                .figment()
+                .extract_inner::<RelativePathBuf>("config")
+                .map(|p| p.relative());
+            
+            let path = match path {
+                Ok(dir) => dir,
+                Err(e) => {
+                    rocket::config::pretty_print_error(e);
+                    return Err(rocket);
                 }
+            };
+
+            if path.exists() && path.is_file(){
+                match Config::load_from_file(&path){
+                    Ok(ok) => Ok(rocket.manage(ok)),
+                    Err(err) => {
+                        rocket::error!("Provided config '{}' is malformed\n{err:?}",path.display());
+                        todo!()
+                    }
+                }
+            }else{
+                if path.exists(){
+                    rocket::error!("Provided config path '{}' is not a file", path.display());
+                }else{
+                    rocket::error!("Provided config path '{}' does not exist", path.display());
+                }
+                Err(rocket)
             }
-            // engine.handlebars.register_script_helper("name", "script")?;
         }))
+        .attach(AdHoc::try_on_ignite("Scripting", |rocket| async{
+            let path = rocket
+            .figment()
+            .extract_inner::<RelativePathBuf>("script_dir")
+            .map(|p| p.relative());
+        
+            let path = match path {
+                Ok(dir) => dir,
+                Err(e) => {
+                    rocket::config::pretty_print_error(e);
+                    return Err(rocket);
+                }
+            };
+
+            if !path.exists(){
+                rocket::error!("provided script_dir {} does not exist", path.display());
+                return Err(rocket)
+            }
+
+            if path.is_file(){
+                rocket::error!("provided script_dir {} is a file", path.display());
+                return Err(rocket)    
+            }
+
+            Ok(rocket.attach(Template::try_custom(move |engine| {
+                engine
+                    .handlebars
+                    .register_helper("json_stringify", Box::new(helper::json_stringify));
+                engine
+                    .handlebars
+                    .register_helper("contains", Box::new(helper::contains));
+                engine.handlebars.set_strict_mode(true);
+    
+                let scripts = std::fs::read_dir(&path)?;
+                for path in scripts.flatten() {
+                    // path.path().file_stem()
+                    if let Some(name) = path.path().file_stem().map(|s| s.to_str()).unwrap_or(None) {
+                        // println!("{name}");
+                        engine
+                            .handlebars
+                            .register_script_helper_file(name, path.path())?;
+                    }
+                }
+                Ok(())
+            })))
+        }))
+        // .attach()
         .attach(database::stage())
         .attach(copy_session::stage())
-        .attach(gen_pdf::stage())
         .attach(templates::stage())
         .mount(
             "/",

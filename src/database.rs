@@ -257,12 +257,18 @@ macro_rules! unwrap_visitor_exression {
     }};
 }
 
+macro_rules! unwrap_visitor_value_exression {
+    ($type:ty, $expr:expr) => {{
+        let val: $type = match serde_json::from_value(Value::String($expr)) {
+            Ok(ok) => ok,
+            Err(err) => return Err(serde_json::json!({ "Error": format!("{:?}", err) })),
+        };
+        val
+    }};
+}
+
 impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     fn eq(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
-        // {
-        //     let test = diesel_dynamic_schema::table("").column::<diesel::sql_types::Text, _>("test");
-        //     test.eq(value);
-        // }
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -286,7 +292,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                         .assume_not_null(),
                 ))
             },
-            { Ok(Box::new(column.eq(unwrap_visitor_exression!(Time, value)))) },
+            {
+                Ok(Box::new(
+                    column.eq(unwrap_visitor_value_exression!(Time, value)),
+                ))
+            },
             { Ok(Box::new(column.eq(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
@@ -321,7 +331,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                         .assume_not_null(),
                 ))
             },
-            { Ok(Box::new(column.lt(unwrap_visitor_exression!(Time, value)))) },
+            {
+                Ok(Box::new(
+                    column.lt(unwrap_visitor_value_exression!(Time, value)),
+                ))
+            },
             { Ok(Box::new(column.lt(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
@@ -356,7 +370,11 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                         .assume_not_null(),
                 ))
             },
-            { Ok(Box::new(column.gt(unwrap_visitor_exression!(Time, value)))) },
+            {
+                Ok(Box::new(
+                    column.gt(unwrap_visitor_value_exression!(Time, value)),
+                ))
+            },
             { Ok(Box::new(column.gt(unwrap_visitor_exression!(bool, value)),)) },
             {
                 Err(serde_json::json!({
@@ -412,8 +430,8 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             },
             {
                 Ok(Box::new(column.between(
-                    unwrap_visitor_exression!(Time, low_value),
-                    unwrap_visitor_exression!(Time, high_value),
+                    unwrap_visitor_value_exression!(Time, low_value),
+                    unwrap_visitor_value_exression!(Time, high_value),
                 )))
             },
             {
@@ -620,7 +638,7 @@ async fn update_post(
 }
 
 pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
+    AdHoc::on_ignite("Databse", |rocket| async {
         rocket
             .attach(Db::fairing())
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
@@ -675,7 +693,7 @@ mod tests {
 
     #[test]
     fn fuzz_data() {
-        let conf = crate::Config::load_from_file("./res/everything.json")
+        let conf = crate::Config::load_from_file("./res/everything.json5")
             .expect("Failed to load config file. Fatial Error")
             .0;
 

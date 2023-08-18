@@ -9,7 +9,8 @@ const autoFilloem_serial = new AutoFillSession("all_oem_serial", getqc1_initial,
 const autoFillitem_serial = new AutoFillSession("all_item_serial", getqc1_initial, getqc2_initial);
 const autoFillasm_serial = new AutoFillSession("all_asm_serial", getqc1_initial, getqc2_initial);
 
-
+const urlParams = new URLSearchParams(window.location.search);
+let download_id_on_save = urlParams.has('download_id_on_save');
 
 
 const qcform = document.querySelector("#qc-form");
@@ -76,7 +77,7 @@ function download_id(id){
 function update_form_values(json) {
     let qc_answers = null;
     Object.entries(json).forEach((entry) => {
-        const [key, value] = entry;
+        let [key, value] = entry;
         switch (key) {
             case "id":
                 var id = parseInt(value);
@@ -97,6 +98,10 @@ function update_form_values(json) {
                 break;
             default:
                 try {
+                    console.log(typeof value, value);
+                    if (typeof value === 'string'){
+                        value = value.trim();
+                    }
                     document.getElementById(key).value = value;
                     if (key === "build_type" && json.id == null){
                         update_build_type();

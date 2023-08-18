@@ -1,6 +1,7 @@
 [default]
 template_dir = "templates"
-template_script_dir = "template_scripts"
+script_dir = "template_scripts"
+config = "config.json5"
 
 [default.databases.diesel]
 url = "db/diesel/db.sqlite"

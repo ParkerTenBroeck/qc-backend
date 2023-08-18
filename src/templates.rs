@@ -66,11 +66,24 @@ async fn database_page(items: &Config) -> Template {
     )
 }
 
+#[get("/printable/<id>")]
+pub async fn printable(items: &Config, id: i32, db: Db) -> database::Result<Template> {
+    let values = db.get_form(id).await?;
+
+    Ok(Template::render(
+        "printable",
+        context! {
+            items: &items.0,
+            values,
+        },
+    ))
+}
+
 pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("", |rocket| async {
+    AdHoc::on_ignite("Templates", |rocket| async {
         rocket.mount(
             "/",
-            routes![qc_form, qc_form_id, qc_form_provided, database_page],
+            routes![qc_form, qc_form_id, qc_form_provided, database_page, printable],
         )
     })
 }
