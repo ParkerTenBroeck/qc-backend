@@ -32,8 +32,8 @@ class AutoFillSession {
             if (this.qc1Button.contains(event.target) | this.qc2Button.contains(event.target) | this.cancelButton.contains(event.target)){
                 return;
             }
-            if (this.input.disabled && this.ws == null) {
-                this.input.disabled = false;
+            if (this.input.hasAttribute("data-readonly") && this.ws == null) {
+                this.input.removeAttribute("data-readonly");
                 this.input.value = "";
             }
         });
@@ -50,7 +50,7 @@ class AutoFillSession {
         this.cancelButton.addEventListener("click", async () => {
             await this.close_websocket();
             this.input.value = "";
-            this.input.disabled = false;
+            this.input.removeAttribute("data-readonly");
         });
 
 
@@ -62,7 +62,7 @@ class AutoFillSession {
 
     async new_websocket(session_id) {
         if (session_id == undefined || session_id == null || session_id.trim().length == 0) {
-            this.input.disabled = true;
+            this.input.setAttribute("data-readonly", false);
             this.input.value = "Error: Session id cannot be empty";
             return;
         }
@@ -73,7 +73,7 @@ class AutoFillSession {
         this.ws.addEventListener("open", this.open);
         this.ws.addEventListener("error", this.error);
         this.ws.addEventListener("message", this.message);
-        this.input.disabled = true;
+        this.input.setAttribute("data-readonly", false);
         this.qc1Button.style.visibility = "hidden";
         this.qc2Button.style.visibility = "hidden";
         this.cancelButton.style.visibility = "visible";
@@ -99,7 +99,7 @@ class AutoFillSession {
         this.qc1Button.style.visibility = "visible";
         this.qc2Button.style.visibility = "visible";
         this.cancelButton.style.visibility = "hidden";
-        this.input.disabled = false;
+        this.input.removeAttribute("data-readonly");
     }
 
     event_open(event) {
@@ -115,7 +115,7 @@ class AutoFillSession {
                 this.input.value = "Session ended for an unknown reason code: " + event.code;
             }
         } else {
-            this.input.disabled = false;
+            this.input.removeAttribute("data-readonly");
         }
         this.close_websocket();
     }
@@ -137,7 +137,7 @@ class AutoFillSession {
         }else{
             await this.close_websocket();
             this.input.value = "Malformed Message";
-            this.input.disabled = true;
+            this.input.setAttribute("data-readonly", false);
         }
     }
 }

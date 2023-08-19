@@ -132,7 +132,7 @@
             <label for="item_serial" class="col-sm-1 col-form-label ">Item Serial</label>
             <div class="col-sm-3" id="all_item_serial">
                 <div>
-                    <input type="text" class="form-control qc-form-item" id="item_serial" name="item_serial" tag="input"
+                    <input required type="text" class="form-control qc-form-item" id="item_serial" name="item_serial" tag="input"
                         {{#if this.items.item_serial.pattern}}pattern="{{this.items.item_serial.pattern}}" {{/if}} 
                         {{!-- {{#if this.values.item_serial}}value="{{this.values.item_serial}}" {{/if}} --}}
                         ></input>
@@ -283,6 +283,7 @@
                                     style="display:none"
                                     value="i"
                                     >
+                                </input>
                                 
                                 <input 
                                     class="{{qc}} radio-btn radio-pass" 
@@ -291,7 +292,8 @@
                                     name="{{qc}}-{{question_id}}" 
                                     value="p"
                                     >
-                                <label for="{{qc}}-pass-{{question_id}}">Pass</label>
+                                <label class="radio-btn-text" for="{{qc}}-pass-{{question_id}}">Pass</label>
+                                </input>
 
                                 <input 
                                     class="{{qc}} adio-btn radio-fail" 
@@ -300,7 +302,8 @@
                                     name="{{qc}}-{{question_id}}" 
                                     value="f"
                                     >
-                                <label for="{{qc}}-fail-{{question_id}}">Fail</label>
+                                <label class="radio-btn-text" for="{{qc}}-fail-{{question_id}}">Fail</label>
+                                </input>
 
                                 <input 
                                     class="{{qc}} radio-btn radio-na" 
@@ -309,7 +312,8 @@
                                     name="{{qc}}-{{question_id}}" 
                                     value="n"
                                     >
-                                <label for="{{qc}}-na-{{question_id}}">N/A</label>
+                                <label class="radio-btn-text" for="{{qc}}-na-{{question_id}}">N/A</label>
+                                </input>
                             </div>
                             {{/inline}}
                             
