@@ -19,6 +19,7 @@ pub mod json_text;
 pub mod qc_checklist;
 pub mod qurry_builder;
 pub mod schema;
+pub mod snapshots;
 pub mod templates;
 pub mod time;
 
@@ -91,7 +92,7 @@ fn rocket() -> _ {
                 .figment()
                 .extract_inner::<RelativePathBuf>("config")
                 .map(|p| p.relative());
-            
+
             let path = match path {
                 Ok(dir) => dir,
                 Err(e) => {
@@ -100,29 +101,32 @@ fn rocket() -> _ {
                 }
             };
 
-            if path.exists() && path.is_file(){
-                match Config::load_from_file(&path){
+            if path.exists() && path.is_file() {
+                match Config::load_from_file(&path) {
                     Ok(ok) => Ok(rocket.manage(ok)),
                     Err(err) => {
-                        rocket::error!("Provided config '{}' is malformed\n{err:?}",path.display());
+                        rocket::error!(
+                            "Provided config '{}' is malformed\n{err:?}",
+                            path.display()
+                        );
                         todo!()
                     }
                 }
-            }else{
-                if path.exists(){
+            } else {
+                if path.exists() {
                     rocket::error!("Provided config path '{}' is not a file", path.display());
-                }else{
+                } else {
                     rocket::error!("Provided config path '{}' does not exist", path.display());
                 }
                 Err(rocket)
             }
         }))
-        .attach(AdHoc::try_on_ignite("Scripting", |rocket| async{
+        .attach(AdHoc::try_on_ignite("Scripting", |rocket| async {
             let path = rocket
-            .figment()
-            .extract_inner::<RelativePathBuf>("script_dir")
-            .map(|p| p.relative());
-        
+                .figment()
+                .extract_inner::<RelativePathBuf>("script_dir")
+                .map(|p| p.relative());
+
             let path = match path {
                 Ok(dir) => dir,
                 Err(e) => {
@@ -131,14 +135,14 @@ fn rocket() -> _ {
                 }
             };
 
-            if !path.exists(){
+            if !path.exists() {
                 rocket::error!("provided script_dir {} does not exist", path.display());
-                return Err(rocket)
+                return Err(rocket);
             }
 
-            if path.is_file(){
+            if path.is_file() {
                 rocket::error!("provided script_dir {} is a file", path.display());
-                return Err(rocket)    
+                return Err(rocket);
             }
 
             Ok(rocket.attach(Template::try_custom(move |engine| {
@@ -149,11 +153,12 @@ fn rocket() -> _ {
                     .handlebars
                     .register_helper("contains", Box::new(helper::contains));
                 engine.handlebars.set_strict_mode(true);
-    
+
                 let scripts = std::fs::read_dir(&path)?;
                 for path in scripts.flatten() {
                     // path.path().file_stem()
-                    if let Some(name) = path.path().file_stem().map(|s| s.to_str()).unwrap_or(None) {
+                    if let Some(name) = path.path().file_stem().map(|s| s.to_str()).unwrap_or(None)
+                    {
                         // println!("{name}");
                         engine
                             .handlebars
@@ -163,7 +168,7 @@ fn rocket() -> _ {
                 Ok(())
             })))
         }))
-        // .attach()
+        .attach(snapshots::stage())
         .attach(database::stage())
         .attach(copy_session::stage())
         .attach(templates::stage())

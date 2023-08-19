@@ -83,7 +83,13 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Templates", |rocket| async {
         rocket.mount(
             "/",
-            routes![qc_form, qc_form_id, qc_form_provided, database_page, printable],
+            routes![
+                qc_form,
+                qc_form_id,
+                qc_form_provided,
+                database_page,
+                printable
+            ],
         )
     })
 }
