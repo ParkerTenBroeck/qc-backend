@@ -165,6 +165,10 @@ function update_qc_questions(qc, only_show_given){
 }
 
 function check_form() {
+    if (autoFilloem_serial.is_open() | autoFillitem_serial.is_open() | autoFillasm_serial.is_open()){
+        alert("Autofill session active")
+        return false;
+    }
     if (qcform.checkValidity() === false){
         qcform.reportValidity();
         return false;

@@ -68,7 +68,7 @@ class AutoFillSession {
         }
         await this.close_websocket();
         this.ws = new WebSocket("ws://" + location.host + "/api/consume_single/" + session_id);
-
+        
         this.ws.addEventListener("close", this.close);
         this.ws.addEventListener("open", this.open);
         this.ws.addEventListener("error", this.error);
@@ -77,6 +77,15 @@ class AutoFillSession {
         this.qc1Button.style.visibility = "hidden";
         this.qc2Button.style.visibility = "hidden";
         this.cancelButton.style.visibility = "visible";
+    }
+
+    is_open() {
+        let tmp = this.ws;
+        if (tmp != null){
+            return !(tmp.readyState == WebSocket.CLOSED)
+        }else{
+            return false;
+        }
     }
 
     async close_websocket() {
