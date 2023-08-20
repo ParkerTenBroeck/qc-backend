@@ -193,6 +193,76 @@
         </tbody>
     </table>
 
+    <script>
+        function id_map(all, val){
+            var a = document.createElement('a');
+            var linkText = document.createTextNode(val);
+            a.appendChild(linkText);
+            a.title = val;
+            a.href = "/qc_form/" + val;
+            return a;     
+        }
+
+        function identity(all, val){
+            return document.createTextNode(val);
+        }
+
+        function boolean_map(all, val){
+            return document.createTextNode(val ? "Yes" : "No");
+        }
+
+        function date_map(all, val){
+            var formatted = new Date(val).toLocaleDateString("en-US");
+            return document.createTextNode(formatted);
+        }
+
+        const key_map = create_key_map();
+        function create_key_map() {
+            let tmp =  [
+            {{#each this.items.database.order as |column|}}
+                {{#with (lookup @root.items.database.columns column) as |column_config|}}
+                    ["{{column}}", 
+                    {{#with column_config.mapping}}
+                        {{this}}
+                    {{else}}
+                        identity
+                    {{/with}}
+                {{/with}}
+                ],
+            {{/each}}
+        ];
+            tmp.unshift(["id", id_map]);
+            return tmp;
+        }
+        {{#*inline "mapping"}}
+        function {{mapping}}_map(all, value){
+            {{#with (lookup this.items mapping)}}
+                const map = {{json_stringify this.values}};
+            {{/with}}
+            if (value == null){
+                return document.createTextNode("");
+            }else{
+                return document.createTextNode(map[value].name);
+            }
+        }
+        {{/inline}}
+
+        function date_mapping(date){
+
+        }
+
+        {{>mapping mapping="build_types"}}
+        {{>mapping mapping="build_locations"}}
+        {{>mapping mapping="operating_systems"}}
+        {{>mapping mapping="processor_types"}}
+        {{>mapping mapping="processor_gens"}}
+        {{>mapping mapping="drive_types"}}
+        {{>mapping mapping="drive_sizes"}}
+        {{>mapping mapping="ram_types"}}
+        {{>mapping mapping="ram_sizes"}}
+        
+    </script>
+
     <script src="/src/database_api.js"></script>
     <script src="/src/database.js"></script>
     <!--Import Javascript components needed for bootstrap-->
@@ -205,6 +275,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
         integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
         crossorigin="anonymous"></script>
+
+        
 </body>
 
 </html>

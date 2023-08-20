@@ -10,57 +10,10 @@ async function generateTableFromJizml(jsonList) {
     if (jsonList == null && jsonList.length > 0) {
         return;
     }
-    // Get the keys from the first JSON object for the table headers
-    var keys = Object.keys(jsonList[0]);
-    var key_map = [
-        "id",
-        "creation_date",
-        "build_type",
-        "build_location",
-        "qc1_initial",
-        "qc2_initial",
-        "sales_order",
-        "item_serial",
-        "asm_serial",
-        "oem_serial",
-        "make_model",
-        "operating_system",
-        "mso_installed",
-        "processor_type",
-        "processor_gen",
-        "drive_type",
-        "drive_size",
-        "ram_type",
-        "ram_size"
-    ];
+
     // Loop through each JSON object in the list
     for (var i = 0; i < jsonList.length; i++) {
         var jsonObj = jsonList[i];
-        // Create a table row for the JSON object
-        var row = document.createElement('tr');
-
-        // Loop through each key and create a table cell
-        for (var k = 0; k < key_map.length; k++) {
-
-            var cell = document.createElement('td');
-            if (key_map[k] == "creation_date") {
-                var time = jsonObj[key_map[k]];
-                var formatted = new Date(time).toLocaleDateString("en-US");
-                cell.appendChild(document.createTextNode(formatted));
-            } else if (key_map[k] == "mso_installed") {
-                cell.appendChild(document.createTextNode(jsonObj[key_map[k]] ? "Yes" : "No"));
-            } else if (key_map[k] == "id") {
-                var a = document.createElement('a');
-                var linkText = document.createTextNode(jsonObj[key_map[k]]);
-                a.appendChild(linkText);
-                a.title = jsonObj[key_map[k]];
-                a.href = "/qc_form/" + jsonObj[key_map[k]];
-                cell.appendChild(a);
-            } else {
-                cell.appendChild(document.createTextNode(jsonObj[key_map[k]]));
-            }
-            row.appendChild(cell);
-        }
 
         var total_passes = 0;
         var total_fails = 0;
@@ -92,19 +45,35 @@ async function generateTableFromJizml(jsonList) {
                 }
             }
         }
+        jsonObj.total_passes = total_passes;
+        jsonObj.total_fails = total_fails;
+        jsonObj.total_incomplete = total_incomplete;
+        jsonObj.total_nas = total_nas;
 
-        var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(total_passes));
-        row.appendChild(cell);
-        var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(total_fails));
-        row.appendChild(cell);
-        var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(total_nas));
-        row.appendChild(cell);
-        var cell = document.createElement('td');
-        cell.appendChild(document.createTextNode(total_incomplete));
-        row.appendChild(cell);
+        // Create a table row for the JSON object
+        var row = document.createElement('tr');
+
+        // Loop through each key and create a table cell
+        for (var k = 0; k < key_map.length; k++) {
+
+            var cell = document.createElement('td');
+            let val = key_map[k];
+            cell.appendChild(val[1](jsonObj, jsonObj[val[0]]));
+            row.appendChild(cell);
+        }
+
+        // var cell = document.createElement('td');
+        // cell.appendChild(document.createTextNode(total_passes));
+        // row.appendChild(cell);
+        // var cell = document.createElement('td');
+        // cell.appendChild(document.createTextNode(total_fails));
+        // row.appendChild(cell);
+        // var cell = document.createElement('td');
+        // cell.appendChild(document.createTextNode(total_nas));
+        // row.appendChild(cell);
+        // var cell = document.createElement('td');
+        // cell.appendChild(document.createTextNode(total_incomplete));
+        // row.appendChild(cell);
 
         // Append the row to the table body
         tbody.appendChild(row);

@@ -220,9 +220,10 @@
     },
     "database": {
         "columns": {
-            "creation_date": {"name": "Created", "show": true, "db_column": true},
-            "build_type": {"name": "Build Type", "show": true, "db_column": true, "mapping": "build_types"},
-            "build_location": {"name": "Build Location", "db_column": true, "mapping": "build_locations"},
+            "creation_date": {"name": "Created", "show": true, "db_column": true, "mapping": "date_map"},
+            "last_updated": {"name": "Updated", "show": true, "db_column": true, "mapping": "date_map"},
+            "build_type": {"name": "Build Type", "show": true, "db_column": true, "mapping": "build_types_map"},
+            "build_location": {"name": "Build Location", "db_column": true, "mapping": "build_locations_map"},
             "qc1_initial": {"name": "QC1 Initial", "db_column": true},
             "qc2_initial": {"name": "QC2 Initial", "db_column": true},
             "sales_order": {"name": "Sales Order", "show": true, "db_column": true},
@@ -230,26 +231,26 @@
             "asm_serial": {"name": "Asm Serial No.", "show": true, "db_column": true},
             "oem_serial": {"name": "Oem Serial No.", "show": true, "db_column": true},
             "make_model": {"name": "Make/Model", "show": true, "db_column": true},
-            "operating_system": {"name": "OS", "db_column": true, "mapping": "operating_systems"},
-            "mso_installed": {"name": "MSO Installed", "db_column": true, "mapping": "$bool"},
-            "processor_type": {"name": "Processor Type", "show": true, "db_column": true, "mapping": "processor_types"},
-            "processor_gen": {"name": "Processor Gen", "show": true, "db_column": true, "mapping": "processor_gens"},
-            "drive_type": {"name": "Drive Type", "show": true, "db_column": true, "mapping": "drive_types"},
-            "drive_size": {"name": "Drive Size", "show": true, "db_column": true, "mapping": "drive_sizes"},
-            "ram_size": {"name": "Ram Size", "show": true, "db_column": true, "mapping": "ram_sizes"},
-            "ram_type": {"name": "Ram Type", "show": true, "db_column": true, "mapping": "ram_types"},
+            "operating_system": {"name": "OS", "db_column": true, "mapping": "operating_systems_map"},
+            "mso_installed": {"name": "MSO Installed", "db_column": true, "mapping": "boolean_map"},
+            "processor_type": {"name": "Processor Type", "show": true, "db_column": true, "mapping": "processor_types_map"},
+            "processor_gen": {"name": "Processor Gen", "show": true, "db_column": true, "mapping": "processor_gens_map"},
+            "drive_type": {"name": "Drive Type", "show": true, "db_column": true, "mapping": "drive_types_map"},
+            "drive_size": {"name": "Drive Size", "show": true, "db_column": true, "mapping": "drive_sizes_map"},
+            "ram_size": {"name": "Ram Size", "show": true, "db_column": true, "mapping": "ram_sizes_map"},
+            "ram_type": {"name": "Ram Type", "show": true, "db_column": true, "mapping": "ram_types_map"},
             "tech_notes": {"name": "Tech Notes", "db_column": true},
 
-            "passes": {"name": "Passes", "show": true},
-            "fails": {"name": "Fails", "show": true},
-            "nas": {"name": "N/As", "show": true},
-            "incomplete": {"name": "Incomplete", "show": true}
+            "total_passes": {"name": "Passes", "show": true},
+            "total_fails": {"name": "Fails", "show": true},
+            "total_nas": {"name": "N/As", "show": true},
+            "total_incomplete": {"name": "Incomplete", "show": true}
         },
         "order": [
             "creation_date", "build_type", "build_location", "qc1_initial", "qc2_initial",
             "sales_order", "item_serial", "asm_serial", "oem_serial", "make_model", "operating_system",
             "mso_installed", "processor_type", "processor_gen", "drive_type", "drive_size", "ram_type", "ram_size", 
-            "passes", "fails", "nas", "incomplete"
+            "total_passes", "total_fails", "total_nas", "total_incomplete"
             ]
     }
 }
