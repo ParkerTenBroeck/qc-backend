@@ -1,7 +1,5 @@
 /target
 /.vscode
-db/diesel/db.sqlite
-db/diesel/db.sqlite-shm
-db/diesel/db.sqlite-wal
+**.sqlite*
 
 *.zip
