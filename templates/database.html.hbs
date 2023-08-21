@@ -168,15 +168,6 @@
         </tr>
     </table>
 
-    <div style="display:none">
-        {{#each @root.items.database.order as |column_id|}}
-                {{#with (lookup @root.items.database.columns column_id) as |column| }}
-                
-            {{/with}}
-        {{/each}}
-    </div>
-
-
     <table class="table table-striped" , id="qurry_list">
         <thead>
             <tr>
@@ -203,7 +194,7 @@
         }
 
         function identity(all, val){
-            return document.createTextNode(val);
+            return document.createTextNode(val == null ? "" : val);
         }
 
         function boolean_map(all, val){
@@ -245,10 +236,6 @@
             }
         }
         {{/inline}}
-
-        function date_mapping(date){
-
-        }
 
         {{>mapping mapping="build_types"}}
         {{>mapping mapping="build_locations"}}

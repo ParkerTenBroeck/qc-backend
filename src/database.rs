@@ -449,6 +449,8 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
     }
 
     fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+        // qc_forms::creation_date.sql("")
+        // diesel::sql_function!
         dyn_qc_form_column!(
             ident.as_str(),
             _column,

@@ -30,3 +30,19 @@ impl FromSql<TimestamptzSqlite, Sqlite> for Time {
         Ok(Self(time::OffsetDateTime::from_sql(bytes)?))
     }
 }
+
+
+mod test2{
+    use diesel::{QueryDsl, BoxableExpression, sqlite::Sqlite, sql_types::Bool};
+
+    use crate::schema::qc_forms;
+
+
+type DynExpr = Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
+
+
+    fn test3(){
+        let t: DynExpr = Box::new(diesel::dsl::sql::<Bool>("creation"));
+        // diesel::sql_query(query)
+    }
+}

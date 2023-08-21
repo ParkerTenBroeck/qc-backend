@@ -42,3 +42,71 @@ async function search(limit, query, sortby, ascending, offset) {
         }),
     })
 }
+
+function to_db_date(date) {
+    let year = date.getUTCFullYear();
+    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    
+
+    let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+    let day_date = date.getUTCDate().toString().padStart(2, "0");
+
+    let hour = date.getUTCHours().toString().padStart(2, "0");
+    let minute = date.getUTCMinutes().toString().padStart(2, "0");
+    let seconds = date.getUTCSeconds().toString().padStart(2, "0");
+
+    let milis = date.getUTCMilliseconds().toString().padStart(3, "0");
+    let micros = "000000";
+    return year + "-" + month + "-" + day_date + "T" + hour + ":" + minute + ":" + seconds + "." + milis + micros + "Z";
+}
+
+function start_of_db_date(date) {
+    let year = date.getUTCFullYear();
+    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    
+
+    let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+    let day_date = date.getUTCDate().toString().padStart(2, "0");
+
+    let hour = "00";
+    let minute = "00";
+    let seconds = "00";
+
+    let milis = "000";
+    let micros = "000000";
+    return year + "-" + month + "-" + day_date + "T" + hour + ":" + minute + ":" + seconds + "." + milis + micros + "Z";
+}
+
+function end_of_db_date(date) {
+    let year = date.getUTCFullYear();
+    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    
+
+    let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+    let day_date = date.getUTCDate().toString().padStart(2, "0");
+
+    let hour = "23";
+    let minute = "59";
+    let seconds = "59";
+
+    let milis = "999";
+    let micros = "999999";
+    return year + "-" + month + "-" + day_date + "T" + hour + ":" + minute + ":" + seconds + "." + milis + micros + "Z";
+}
+
+function on_date_wildcard(date) {
+    let year = date.getUTCFullYear();
+    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    
+
+    let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+    let day_date = date.getUTCDate().toString().padStart(2, "0");
+
+    // let hour = date.getUTCHours().toString().padStart(2, "0");
+    // let minute = date.getUTCMinutes().toString().padStart(2, "0");
+    // let seconds = date.getUTCSeconds().toString().padStart(2, "0");
+
+    // let milis = date.getUTCMilliseconds().toString().padStart(3, "0");
+    // let micros = "000000";
+    return year + "-" + month + "-" + day_date + "%";
+}
