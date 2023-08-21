@@ -604,7 +604,7 @@ async fn new_post(db: Db, mut post: Json<QCForm>) -> Result<Created<Json<QCForm>
                     qc_forms::asm_serial
                         .eq(&post_value.asm_serial)
                         .or(qc_forms::oem_serial.eq(&post_value.oem_serial))
-                        .or(qc_forms::asm_serial.eq(&post_value.asm_serial)),
+                        .or(qc_forms::item_serial.eq(&post_value.item_serial)),
                 )
                 .count()
                 .get_result(conn)?;
