@@ -6,7 +6,7 @@ pub fn stage() -> AdHoc {
             let shutdown = rocket.shutdown();
 
             // since we dont do anything yet just return early
-            if true{
+            if true {
                 return;
             }
 

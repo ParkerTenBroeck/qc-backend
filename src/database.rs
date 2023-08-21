@@ -1,4 +1,5 @@
 use crate::json_text::JsonText;
+use diesel::result::DatabaseErrorInformation;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
@@ -598,6 +599,18 @@ async fn new_post(db: Db, mut post: Json<QCForm>) -> Result<Created<Json<QCForm>
 
     post.id = db
         .run(move |conn| {
+            let count: i64 = qc_forms::table
+                .filter(
+                    qc_forms::asm_serial
+                        .eq(&post_value.asm_serial)
+                        .or(qc_forms::oem_serial.eq(&post_value.oem_serial))
+                        .or(qc_forms::asm_serial.eq(&post_value.asm_serial)),
+                )
+                .count()
+                .get_result(conn)?;
+            if count > 0 {
+                return Err(diesel::result::Error::DatabaseError(diesel::result::DatabaseErrorKind::Unknown, Box::new("One or more serial numbers already entered in DB".to_string())).into())
+            }
             diesel::insert_into(qc_forms::table)
                 .values(&*post_value)
                 .execute(conn)?;
