@@ -114,6 +114,7 @@
             "video_output": {"question": "Video output"},
             "user_input": {"question": "Keyboard and Mouse working"},
             "touchscreen_user_input": {"question": "Touchscreen functional", "whitelist_build_types": ["laptop", "tablet"]},
+            "check_camera": {"question": "Webcam vidio/audio working", "whitelist_build_types": ["laptop", "tablet"]},
             "harddrive_os_size": {"question": "Correct HD size reported in OS"},
             "default_programs": {"question": "Set default Programs"},
             "verify_ports": {"question": "Verify all ports (USB, Video, Sound)"},
