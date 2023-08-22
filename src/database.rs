@@ -1,8 +1,11 @@
+use crate::admin_pwd::Admin;
 use crate::json_text::JsonText;
 use diesel::result::DatabaseErrorInformation;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
+use rocket::http::hyper::Response;
+use rocket::response::Responder;
 use rocket::response::status::Accepted;
 use rocket::response::{status::Created, Debug};
 use rocket::serde::{json::Json, Deserialize, Serialize};
@@ -23,27 +26,106 @@ use crate::schema::*;
 pub struct Db(diesel::SqliteConnection);
 
 impl Db {
-    pub async fn get_form(&self, id: i32) -> Result<QCForm> {
-        let form: QCForm = self
+    pub async fn get_form(&self, id: i32) -> Result<ExistingQCForm> {
+        let form: ExistingQCForm = self
             .run(move |conn| qc_forms::table.filter(qc_forms::id.eq(id)).first(conn))
             .await?;
         Ok(form)
     }
 }
 
-pub type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
+#[derive(thiserror::Error, Debug, Serialize)]
+pub enum DataBaseError{
+    #[error("Tried to update finalized form")]
+    UpdatedFinalized,
+    #[error("{0}")]
+    #[serde(serialize_with = "nothing")]
+    DbError(#[from] diesel::result::Error),
+    #[error("A form with the provided OEM serial alreadt exists")]
+    ExistingOemSerial,
+    #[error("A form with the provided ASM serial alreadt exists")]
+    ExistingAsmSerial,
+    #[error("A form with the provided Item serial alreadt exists")]
+    ExistingItemSerial,
+}
+fn nothing<T, S>(_: &T,s: S) -> Result<S::Ok, S::Error> where S: serde::Serializer{
+    s.serialize_str("")
+}
+
+
+
+impl<'r> Responder<'r, 'static> for DataBaseError{
+    fn respond_to(self, _: &'r rocket::Request<'_>) -> std::result::Result<rocket::Response<'static>, rocket::http::Status> { 
+        use std::io::Cursor;
+        use rocket::response::Response;
+
+        Response::build()
+            .header(rocket::http::ContentType::Plain)
+            .streamed_body(Cursor::new(serde_json::to_vec(&self).unwrap_or(Vec::new())))
+            .ok()
+     }
+
+}
+
+pub type Result<T, E = DataBaseError> = std::result::Result<T, E>;
 
 fn time_default() -> Time {
     Time(time::OffsetDateTime::now_utc())
+}
+
+
+
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
+#[serde(crate = "rocket::serde")]
+#[diesel(table_name = crate::schema::qc_forms)]
+#[diesel(treat_none_as_null = true)]
+pub struct NewQCForm {
+    #[serde(skip_deserializing)]
+    #[serde(default)]
+    pub finalized: bool,
+    // #[serde(skip_deserializing)]
+    // #[serde(default = "time_default")]
+    pub creation_date: Time,
+    // #[serde(skip_deserializing)]
+    // #[serde(default = "time_default")]
+    pub last_updated: Time,
+    pub build_location: String,
+    pub build_type: String,
+    pub drive_type: String,
+    // example SHIL-0023746
+    pub item_serial: String,
+    // example CFS-SL300F-001220
+    pub asm_serial: Option<String>,
+    // the serial listed in the bios of the device
+    pub oem_serial: String,
+    pub make_model: String,
+    pub mso_installed: bool,
+    pub operating_system: String,
+    pub processor_gen: String,
+    pub processor_type: String,
+    pub qc_answers: QCChecklist,
+    pub qc1_initial: String,
+    pub qc2_initial: Option<String>,
+
+    pub ram_size: String,
+    pub ram_type: String,
+
+    pub sales_order: Option<String>,
+    pub drive_size: String,
+    pub tech_notes: String,
+
+    pub metadata: Option<JsonText>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = crate::schema::qc_forms)]
 #[diesel(treat_none_as_null = true)]
-pub struct QCForm {
+pub struct ExistingQCForm {
     #[serde(skip_deserializing)]
-    pub id: Option<i32>,
+    pub id: i32,
+    #[serde(skip_deserializing)]
+    pub finalized: bool,
     #[serde(default = "time_default")]
     pub creation_date: Time,
     #[serde(default = "time_default")]
@@ -519,7 +601,7 @@ struct SearchForm<'f> {
 async fn search(
     db: Db,
     search: Form<SearchForm<'_>>,
-) -> std::result::Result<Json<Vec<QCForm>>, QuerryError> {
+) -> std::result::Result<Json<Vec<ExistingQCForm>>, QuerryError> {
     let mut boxed = qc_forms::table.into_boxed();
 
     let mut visitor = VisitorTest::new();
@@ -577,7 +659,7 @@ async fn search(
 
     println!("{}", diesel::debug_query::<Sqlite, _>(&boxed));
 
-    let qc_posts: Vec<QCForm> = match db.run(move |conn| boxed.load(conn)).await {
+    let qc_posts: Vec<ExistingQCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
         Err(err) => return Err(QuerryError::DieselError(err.into())),
     };
@@ -586,42 +668,68 @@ async fn search(
 }
 
 #[get("/get_post/<id>")]
-async fn get_post(db: Db, id: i32) -> Option<Json<QCForm>> {
-    db.run(move |conn| qc_forms::table.filter(qc_forms::id.eq(id)).first(conn))
+async fn get_post(db: Db, id: i32) -> Option<Json<ExistingQCForm>> {
+    db.run(move |conn| qc_forms::table.find(id).get_result(conn))
         .await
         .map(Json)
         .ok()
 }
 
-#[post("/new_post", data = "<post>")]
-async fn new_post(db: Db, mut post: Json<QCForm>) -> Result<Created<Json<QCForm>>> {
-    let post_value = post.clone();
+#[delete("/delete_post/<id>")]
+async fn delete_post(db: Db, id: i32, _admin: Admin) -> Result<()>{
+    db.run(move |conn| {
+        diesel::delete(qc_forms::table.find(id)).execute(conn)?;
+        Ok(())
+    }).await
+}
 
-    post.id = db
+#[post("/finalize_post/<id>")]
+async fn finalize_post(db: Db, id: i32) -> Result<Json<ExistingQCForm>>{
+    db.run(move |conn| {
+        diesel::update(qc_forms::table.find(id)).set(qc_forms::finalized.eq(true)).execute(conn)?;
+        Ok(qc_forms::table.find(id).get_result::<ExistingQCForm>(conn)?.into())
+    }).await
+}
+
+#[post("/definalize_post/<id>")]
+async fn definalize_post(db: Db, id: i32, _admin: Admin) -> Result<Json<ExistingQCForm>>{
+    db.run(move |conn| {
+        diesel::update(qc_forms::table.find(id)).set(qc_forms::finalized.eq(false)).execute(conn)?;
+        Ok(qc_forms::table.find(id).get_result::<ExistingQCForm>(conn)?.into())
+    }).await
+}
+
+#[post("/new_post", data = "<post>")]
+async fn new_post(db: Db, post: Json<NewQCForm>) -> Result<Created<Json<ExistingQCForm>>> {
+
+    let post: Json<ExistingQCForm> = db
         .run(move |conn| {
-            let count: i64 = qc_forms::table
-                .filter(
-                    qc_forms::asm_serial
-                        .eq(&post_value.asm_serial)
-                        .or(qc_forms::oem_serial.eq(&post_value.oem_serial))
-                        .or(qc_forms::item_serial.eq(&post_value.item_serial)),
-                )
-                .count()
-                .get_result(conn)?;
-            if count > 0 {
-                return Err(diesel::result::Error::DatabaseError(diesel::result::DatabaseErrorKind::Unknown, Box::new("One or more serial numbers already entered in DB".to_string())).into())
+            let count: i64 = qc_forms::table.filter(
+                qc_forms::asm_serial.eq(&post.asm_serial)).count().get_result(conn)?;
+            if count > 0{
+                return Err(DataBaseError::ExistingAsmSerial)
             }
+            let count: i64 = qc_forms::table.filter(
+                qc_forms::item_serial.eq(&post.item_serial)).count().get_result(conn)?;
+            if count > 0{
+                return Err(DataBaseError::ExistingItemSerial)
+            }
+            
+            let count: i64 = qc_forms::table.filter(
+                qc_forms::oem_serial.eq(&post.oem_serial)).count().get_result(conn)?;
+            if count > 0{
+                return Err(DataBaseError::ExistingOemSerial)
+            }
+
             diesel::insert_into(qc_forms::table)
-                .values(&*post_value)
+                .values(&*post)
                 .execute(conn)?;
 
-            let res = qc_forms::table
-                .select(qc_forms::id)
+            let res: ExistingQCForm = qc_forms::table
                 .order(qc_forms::id.desc())
                 .first(conn)?;
-            println!("{:#?}", res);
 
-            Result::<Option<i32>, Debug<diesel::result::Error>>::Ok(res)
+            Result::<Json<ExistingQCForm>>::Ok(res.into())
         })
         .await?;
     Ok(Created::new("/").body(post))
@@ -639,14 +747,20 @@ async fn update_post(
     db: Db,
     id: i32,
     mut update: Json<QCFormUpdate>,
-) -> Result<Accepted<Json<QCForm>>> {
+) -> Result<Accepted<Json<ExistingQCForm>>> {
     update.last_updated = Some(time_default());
-    let res: QCForm = db
+    let res: ExistingQCForm = db
         .run(move |conn| {
+            let finalized: bool = qc_forms::table.find(id).select(qc_forms::finalized).get_result(conn)?;
+            
+            if finalized{
+                return Err(DataBaseError::UpdatedFinalized);
+            }
+
             diesel::update(qc_forms::table.filter(qc_forms::id.eq(id)))
                 .set(&*update)
                 .execute(conn)?;
-            qc_forms::table.filter(qc_forms::id.eq(id)).first(conn)
+            Ok(qc_forms::table.filter(qc_forms::id.eq(id)).first(conn)?)
         })
         .await?;
     Ok(Accepted(Json(res)))
@@ -659,7 +773,7 @@ pub fn stage() -> AdHoc {
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
             .mount(
                 "/api",
-                routes![get_post, new_post, update_post, search, timetest],
+                routes![get_post, new_post, update_post, search, timetest, finalize_post, definalize_post, delete_post],
             )
     })
 }
@@ -690,7 +804,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use crate::{
-        database::{QCForm, Time},
+        database::{NewQCForm, Time},
         qc_checklist::{QCChecklist, QuestionAnswer, QuestionAnswers},
         schema::qc_forms::{self, drive_type},
     };
@@ -706,9 +820,28 @@ mod tests {
         Ok(())
     }
 
+    // #[test]
+    // fn load_json(){
+    //     let rocket = rocket::build()
+    //     .attach(super::stage())
+    //     .mount("/api", routes![destroy]);
+    // let client = Client::tracked(rocket).unwrap();
+    // assert_eq!(client.delete("/api").dispatch().status(), Status::Ok);
+
+
+    //     let json = include_str!("../existing.json");
+    //     let vals: Vec<NewQCForm> = serde_json::from_str(json).unwrap();
+    //     for val in vals{
+    //         let res = client.post("/api/new_post").json(&val).dispatch();
+    //         if res.status() != Status::Created{
+    //             dbg!(res.body());
+    //         }
+    //     }
+    // }
+
     #[test]
     fn fuzz_data() {
-        let conf = crate::Config::load_from_file("./res/everything.json5")
+        let conf = crate::Config::load_from_file("./config.json5")
             .expect("Failed to load config file. Fatial Error")
             .0;
 
@@ -798,8 +931,7 @@ mod tests {
             let sales_order = String::new();
             let build_type = random_val(rng, "build_types", &conf);
 
-            let form = QCForm {
-                id: None,
+            let form = NewQCForm {
                 creation_date: Time(
                     OffsetDateTime::from_unix_timestamp(rng.gen_range(
                         time::Date::MIN.midnight().assume_utc().unix_timestamp(),
@@ -906,6 +1038,7 @@ mod tests {
                 tech_notes: "".into(),
                 metadata: None,
                 build_type,
+                finalized: false,
             };
 
             assert_eq!(

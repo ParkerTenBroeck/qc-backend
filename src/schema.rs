@@ -1,6 +1,7 @@
 diesel::table! {
     qc_forms (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
+        finalized -> Bool,
         creation_date -> TimestamptzSqlite,
         last_updated -> TimestamptzSqlite,
         build_location -> Text,

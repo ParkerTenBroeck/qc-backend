@@ -29,6 +29,35 @@ async function get_post(post) {
     })
 }
 
+async function finalize_post(id) {
+    return fetch("/api/finalize_post/" + id, {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+    })
+}
+
+async function definalize_post(id, password) {
+    return fetch("/api/definalize_post/" + id, {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json; charset=UTF-8",
+            "ADMIN_PASSWORD": password
+        }
+    })
+}
+
+async function delete_post(id, password) {
+    return fetch("/api/delete_post/" + id, {
+        method: "DELETE",
+        headers: {
+            "Content-type": "application/json; charset=UTF-8",
+            "ADMIN_PASSWORD": password
+        }
+    })
+}
+
 async function search(limit, query, sortby, ascending, offset) {
     return fetch("/api/search", {
         method: "POST",

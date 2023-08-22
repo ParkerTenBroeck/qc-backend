@@ -23,23 +23,27 @@ async function save_form() {
     let post = await new_post(JSON.stringify(form_to_json()));
 
     if (post.status != 201){
-        alert("Failed to create post");
+        let reason = "";
+        try{
+            reason = await post.json();
+        }catch(e){
+    
+        }
+        alert("Failed to create post: " + reason);
         console.error(post);
         return;
-    }
-
-
-    post = await post.json();
+    }else{
+        post = await post.json();
     
-    edit_id = post.id;
-    if (download_id_on_save){
-        download_id(post.id);
+        edit_id = post.id;
+        if (download_id_on_save){
+            download_id(post.id);
+        }
+    
+        if (post.id != null){
+            window.location.replace("/qc_form/" + post.id);
+        }
     }
-
-    if (post.id != null){
-        window.location.replace("/qc_form/" + post.id);
-    }
-
 }
 
 async function update_form() {
@@ -49,11 +53,18 @@ async function update_form() {
     let res = await update_post(edit_id, JSON.stringify(form_to_json()));
 
     if (res.status != 202){
-        alert("Failed to update post");
+        let reason = "";
+        try{
+            reason = await res.json();
+        }catch(e){
+    
+        }
+        alert("Failed to update post: "+ reason);
         console.error(res);
+    }else{
+        let json = await res.json();
+        update_form_values(json);
     }
-    let json = await res.json();
-    update_form_values(json);
 }
 
 async function load_existing_post() {
@@ -91,6 +102,18 @@ function update_form_values(json) {
             case "metadata":
                 metadata = value;
                 break
+            case "finalized":
+                try{
+
+                    if (value){
+                        document.getElementById(key).setAttribute("finalized", true);
+                    }else{
+                        document.getElementById(key).removeAttribute("finalized");
+                    }
+                }catch(e){
+                    
+                }
+                break;
             case "creation_date":
             case "last_updated":
                 
@@ -114,6 +137,49 @@ function update_form_values(json) {
 
     if (qc_answers != null){
         update_qc_questions(qc_answers, json.id != null);
+    }
+}
+
+async function delete_button(){
+    let pwd = window.prompt();
+    if (pwd == null){
+        return;
+    }
+    let id = edit_id;
+    let res = await delete_post(id, pwd);
+    if (res.status != 200){
+        let reason = "";
+        try{
+            reason = await res.json() ;
+        }catch(e){
+    
+        }
+        alert("Failed to update post: "+ reason + ":" + res.statusText);
+    }else{
+        window.location.replace("/database");   
+    }
+}
+
+async function finalize_form_button(){
+    update_form_values(await (await finalize_post(edit_id)).json())
+}
+
+async function definalize_form_button(){
+    let pwd = window.prompt();
+    if (pwd == null){
+        return;
+    }
+    let res = await definalize_post(edit_id, pwd);
+    if (res.status != 200){
+        let reason = "";
+        try{
+            reason = await res.json();
+        }catch(e){
+    
+        }
+        alert("Failed to update post: "+ reason + ":" + res.statusText);
+    }else{
+        update_form_values(await res.json());
     }
 }
 

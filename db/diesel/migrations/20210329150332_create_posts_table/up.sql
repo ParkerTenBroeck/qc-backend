@@ -1,5 +1,6 @@
 CREATE TABLE qc_forms (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    finalized BOOLEAN NOT NULL,
     creation_date DATETIME NOT NULL,
     last_updated DATETIME NOT NULL,
     build_location VARCHAR NOT NULL,

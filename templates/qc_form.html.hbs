@@ -344,6 +344,8 @@
                     <button type="button" class="btn btn-primary" id="printButton">Print</button>
                 <a>
                 <button type="button" class="btn btn-primary" id="downloadidButton" onclick="download_id(edit_id)">Download Id</button>
+                <button type="button" style="background-color: red;border-color: red;" class="btn btn-primary" id="downloadidButton" onclick="delete_button()">Delete</button>
+                
                 {{else}}
                 <button type="button" class="btn btn-primary" id="saveButton" onclick="save_form()">Save</button>
                 {{/if}}
@@ -368,7 +370,3 @@
 </body>
 
 </html>
-
-<script>
-    console.log("hello from out here!");
-</script>

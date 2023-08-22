@@ -22,8 +22,12 @@ pub mod schema;
 pub mod snapshots;
 pub mod templates;
 pub mod time;
+pub mod admin_pwd;
 
 pub mod copy_session;
+
+
+
 
 #[derive(Debug)]
 pub struct Config(pub serde_json::Value);
@@ -82,11 +86,11 @@ mod helper {
     });
 }
 
-// rocket::log
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
+        .attach(admin_pwd::stage())
         .attach(AdHoc::try_on_ignite("Config", |rocket| async {
             let path = rocket
                 .figment()
