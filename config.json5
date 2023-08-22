@@ -162,6 +162,7 @@
                     "video_output",
                     "user_input",
                     "touchscreen_user_input",
+                    "check_camera",
                     "harddrive_os_size",
                     "default_programs",
                     "verify_ports",
