@@ -1,6 +1,6 @@
-use std::{iter::Peekable, str::Chars};
+use std::{iter::Peekable, str::Chars, fmt::Display};
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq, Serialize)]
@@ -363,7 +363,7 @@ pub trait Visitor<T, E> {
     fn not(&mut self, expr: T) -> Result<T, E>;
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, thiserror::Error)]
 pub enum ExpressionParserError<T> {
     TokenizerError(TokenizerError),
     UnexpectedEndOfExpression,
@@ -377,6 +377,12 @@ pub enum ExpressionParserError<T> {
     },
     VisitorError(T),
     InvalidParsingStack,
+}
+
+impl<T: std::fmt::Debug> std::fmt::Display for ExpressionParserError<T>{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 macro_rules! unwrap_token {

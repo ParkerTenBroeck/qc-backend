@@ -15,7 +15,7 @@ use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 
 use crate::qc_checklist::QCChecklist;
-use crate::qurry_builder::ExpressionParser;
+use crate::qurry_builder::{ExpressionParser, ExpressionParserError};
 use crate::time::Time;
 
 use self::diesel::prelude::*;
@@ -47,6 +47,10 @@ pub enum DataBaseError{
     ExistingAsmSerial,
     #[error("A form with the provided Item serial alreadt exists")]
     ExistingItemSerial,
+    #[error("An error occured when parsing database search query: {0}")]
+    DataBaseSearchError(#[from] ExpressionParserError<VisitorError>),
+    #[error("Invalid column specified '{0:?}'")]
+    InvalidColumn(String),
 }
 fn nothing<T, S>(_: &T,s: S) -> Result<S::Ok, S::Error> where S: serde::Serializer{
     s.serialize_str("")
@@ -61,6 +65,7 @@ impl<'r> Responder<'r, 'static> for DataBaseError{
 
         Response::build()
             .header(rocket::http::ContentType::Plain)
+            .status(rocket::http::Status::BadRequest)
             .streamed_body(Cursor::new(serde_json::to_vec(&self).unwrap_or(Vec::new())))
             .ok()
      }
@@ -318,14 +323,25 @@ macro_rules! dyn_qc_form_column {
 type DynExpr =
     Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
 
-#[derive(Responder)]
-#[response(status = 500, content_type = "json")]
-enum QuerryError {
-    DieselError(Debug<diesel::result::Error>),
-    OtherError(Value),
+#[derive(Debug, Serialize, thiserror::Error)]
+pub enum VisitorError{
+    #[error("Given a null vlaue when expecting only non null values")]
+    ExpectedNonNull,
+    #[error("Invalid type encountered when using the like operator: type='{0}'")]
+    InvalidTypeUsedWithLikeOperator(&'static str),
+    #[error("Invalid type encountered when using the eq operator: type='{0}'")]
+    InvalidTypeUsedWithEqOperator(&'static str),
+    #[error("Invalid type encountered when using the lt operator: type='{0}'")]
+    InvalidTypeUsedWithLtOperator(&'static str),
+    #[error("Invalid type encountered when using the gt operator: type='{0}'")]
+    InvalidTypeUsedWithGtOperator(&'static str),
+    #[error("Invalid type encountered when using the between operator: type='{0}'")]
+    InvalidTypeUsedWithBetweenOperator(&'static str),
+    #[error("Error while trying to parse json data/values: {0}")]
+    JsonParsingError(String),
+    #[error("Invalid Column Selected: {0}")]
+    InvalidColumnSelected(String)
 }
-
-type VisitorError = Value;
 
 struct VisitorTest {}
 impl VisitorTest {
@@ -338,7 +354,7 @@ macro_rules! unwrap_visitor_exression {
     ($type:ty, $expr:expr) => {{
         let val: $type = match serde_json::from_str(&$expr) {
             Ok(ok) => ok,
-            Err(err) => return Err(serde_json::json!({ "Error": format!("{:?}", err) })),
+            Err(err) => return Err(VisitorError::JsonParsingError(err.to_string())),
         };
         val
     }};
@@ -348,7 +364,7 @@ macro_rules! unwrap_visitor_value_exression {
     ($type:ty, $expr:expr) => {{
         let val: $type = match serde_json::from_value(Value::String($expr)) {
             Ok(ok) => ok,
-            Err(err) => return Err(serde_json::json!({ "Error": format!("{:?}", err) })),
+            Err(err) => return Err(VisitorError::JsonParsingError(err.to_string())),
         };
         val
     }};
@@ -386,9 +402,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             },
             { Ok(Box::new(column.eq(unwrap_visitor_exression!(bool, value)),)) },
             {
-                Err(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
-                }))
+                Err(VisitorError::InvalidColumnSelected(ident))
             }
         )
     }
@@ -399,9 +413,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.lt(value))) },
             {
                 if value.is_empty() {
-                    Err(serde_json::json!({
-                        "Error": "given value cannot be null for lt expression"
-                    }))
+                    Err(VisitorError::ExpectedNonNull)
                 } else {
                     Ok(Box::new(
                         column
@@ -425,9 +437,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             },
             { Ok(Box::new(column.lt(unwrap_visitor_exression!(bool, value)),)) },
             {
-                Err(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
-                }))
+                Err(VisitorError::InvalidColumnSelected(ident))
             }
         )
     }
@@ -438,9 +448,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(column.gt(value))) },
             {
                 if value.is_empty() {
-                    Err(serde_json::json!({
-                        "Error": "given value cannot be null for gt expression"
-                    }))
+                    Err(VisitorError::ExpectedNonNull)
                 } else {
                     Ok(Box::new(
                         column
@@ -464,9 +472,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             },
             { Ok(Box::new(column.gt(unwrap_visitor_exression!(bool, value)),)) },
             {
-                Err(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
-                }))
+                Err(VisitorError::InvalidColumnSelected(ident))
             }
         )
     }
@@ -528,9 +534,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                 )))
             },
             {
-                Err(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
-                }))
+                Err(VisitorError::InvalidColumnSelected(ident))
             }
         )
     }
@@ -546,9 +550,7 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Ok(Box::new(_column.like(value))) },
             {
                 if value.is_empty() {
-                    Err(serde_json::json!({
-                        "Error": "given value cannot be null for like expression"
-                    }))
+                    Err(VisitorError::ExpectedNonNull)
                 } else {
                     Ok(Box::new(
                         _column
@@ -559,24 +561,16 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
                 }
             },
             {
-                Err(serde_json::json!({
-                    "Error": "Cannot use like operator with Option<i32> fields"
-                }))
+                Err(VisitorError::InvalidTypeUsedWithLikeOperator("Option<i32>"))
             },
             {
-                Err(serde_json::json!({
-                    "Error": "Cannot use like operator with DateTime fields"
-                }))
+                Err(VisitorError::InvalidTypeUsedWithLikeOperator("DateTime"))
             },
             {
-                Err(serde_json::json!({
-                    "Error": "Cannot use like operator with bool fields"
-                }))
+                Err(VisitorError::InvalidTypeUsedWithLikeOperator("bool"))
             },
             {
-                Err(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", ident)
-                }))
+                Err(VisitorError::InvalidColumnSelected(ident))
             }
         )
     }
@@ -607,7 +601,7 @@ struct SearchForm<'f> {
 async fn search(
     db: Db,
     search: Form<SearchForm<'_>>,
-) -> std::result::Result<Json<Vec<ExistingQCForm>>, QuerryError> {
+) -> Result<Json<Vec<ExistingQCForm>>> {
     let mut boxed = qc_forms::table.into_boxed();
 
     let mut visitor = VisitorTest::new();
@@ -623,9 +617,7 @@ async fn search(
                     boxed = boxed.filter(ok);
                 }
                 Err(err) => {
-                    return Err(QuerryError::OtherError(
-                        serde_json::to_value(err).unwrap_or_default(),
-                    ))
+                    Err(err)?
                 }
             }
         }
@@ -647,10 +639,9 @@ async fn search(
                     boxed = boxed.order_by(column.desc())
                 }
             },
+            
             {
-                return Err(QuerryError::OtherError(serde_json::json!({
-                    "Error": format!("Invalid tabel selected for ordering: {}", order_table)
-                })));
+                return Err(DataBaseError::InvalidColumn(order_table.to_owned()));
             }
         );
     }
@@ -667,7 +658,7 @@ async fn search(
 
     let qc_posts: Vec<ExistingQCForm> = match db.run(move |conn| boxed.load(conn)).await {
         Ok(ok) => ok,
-        Err(err) => return Err(QuerryError::DieselError(err.into())),
+        Err(err) => Err(err)?,
     };
 
     Ok(qc_posts.into())
