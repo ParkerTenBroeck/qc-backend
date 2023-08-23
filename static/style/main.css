@@ -94,3 +94,23 @@ input[data-readonly] {
   background-color: yellow;
   user-select: none;
 }
+
+
+
+.finalized > .finalize-btn{
+  display: none;
+}
+
+.not-finalized > .definalize-btn{
+  display: none;
+}
+
+.finalize-btn{
+  background-color: green !important; 
+  border-color: green !important;
+}
+
+.definalize-btn{
+  background-color: #DBA800 !important;
+  border-color: #DBA800 !important;  
+}

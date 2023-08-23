@@ -533,6 +533,8 @@ impl crate::qurry_builder::Visitor<DynExpr, VisitorError> for VisitorTest {
 
     fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
         // qc_forms::creation_date.sql("")
+        // diesel::dsl::sql()
+        // diesel_dynamic_schema::table("qc_forms").column("c").sql("");
         // diesel::sql_function!
         dyn_qc_form_column!(
             ident.as_str(),
@@ -819,25 +821,6 @@ mod tests {
             .await?;
         Ok(())
     }
-
-    // #[test]
-    // fn load_json(){
-    //     let rocket = rocket::build()
-    //     .attach(super::stage())
-    //     .mount("/api", routes![destroy]);
-    // let client = Client::tracked(rocket).unwrap();
-    // assert_eq!(client.delete("/api").dispatch().status(), Status::Ok);
-
-
-    //     let json = include_str!("../existing.json");
-    //     let vals: Vec<NewQCForm> = serde_json::from_str(json).unwrap();
-    //     for val in vals{
-    //         let res = client.post("/api/new_post").json(&val).dispatch();
-    //         if res.status() != Status::Created{
-    //             dbg!(res.body());
-    //         }
-    //     }
-    // }
 
     #[test]
     fn fuzz_data() {

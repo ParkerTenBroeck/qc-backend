@@ -106,9 +106,11 @@ function update_form_values(json) {
                 try{
 
                     if (value){
-                        document.getElementById(key).setAttribute("finalized", true);
+                        document.getElementById(key).classList.add("finalized");
+                        document.getElementById(key).classList.remove("not-finalized");
                     }else{
-                        document.getElementById(key).removeAttribute("finalized");
+                        document.getElementById(key).classList.remove("finalized");
+                        document.getElementById(key).classList.add("not-finalized");
                     }
                 }catch(e){
                     
