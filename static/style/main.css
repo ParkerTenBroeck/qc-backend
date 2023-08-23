@@ -101,6 +101,10 @@ input[data-readonly] {
   display: none;
 }
 
+.finalized > .update-btn{
+  display: none;
+}
+
 .not-finalized > .definalize-btn{
   display: none;
 }

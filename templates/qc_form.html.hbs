@@ -336,19 +336,18 @@
         </div>
 
         <div class="horizontal-center-outer" style="margin-top:1em" id="control-panel">
-            <div class="horizontal-center-inner">
+            <div class="horizontal-center-inner" id = "finalized">
+
                 <span class="col-sm-1"></span>
                 {{#if this.values.id}}
-                <button type="button" class="btn btn-primary" id="updateButton" onclick="update_form()">Update</button>
+                <button type="button" class="btn btn-primary update-btn" id="updateButton" onclick="update_form()">Update</button>
                 <a target="_blank" href="/printable/{{@root.values.id}}?immediate">
                     <button type="button" class="btn btn-primary" id="printButton">Print</button>
-                <a>
+                </a>
                 <button type="button" class="btn btn-primary" id="downloadidButton" onclick="download_id(edit_id)">Download Id</button>
                 
-                <span id="finalized">
-		          <button type="button" class="btn btn-primary finalize-btn" id="finalize_button" onclick="finalize_form_button()">Finalize</button>
-                  <button type="button" class="btn btn-primary definalize-btn" id="definalize_button" onclick="definalize_form_button()">Definalize</button>  
-                </span> 
+                <button type="button" class="btn btn-primary finalize-btn" id="finalize_button" onclick="finalize_form_button()">Finalize</button>
+                <button type="button" class="btn btn-primary definalize-btn" id="definalize_button" onclick="definalize_form_button()">Definalize</button>  
                 
                 <button type="button" style="background-color: red;border-color: red;" class="btn btn-primary" id="downloadidButton" onclick="delete_button()">Delete</button>
                 {{else}}
