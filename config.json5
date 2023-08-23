@@ -194,6 +194,7 @@
         "columns": {
             "creation_date": {"name": "Created", "show": true, "db_column": true, "mapping": "date_map"},
             "last_updated": {"name": "Updated", "show": true, "db_column": true, "mapping": "date_map"},
+            "finalized": {"name": "Finalized", "show": false, "db_column": true, "mapping": "boolean_map"},
             "build_type": {"name": "Build Type", "show": true, "db_column": true, "mapping": "build_types_map"},
             "build_location": {"name": "Build Location", "db_column": true, "mapping": "build_locations_map"},
             "qc1_initial": {"name": "QC1 Initial", "db_column": true},
@@ -219,7 +220,7 @@
             "total_incomplete": {"name": "Incomplete", "show": true}
         },
         "order": [
-            "creation_date", "build_type", "build_location", "qc1_initial", "qc2_initial",
+            "creation_date", "last_updated", "finalized", "build_type", "build_location", "qc1_initial", "qc2_initial",
             "sales_order", "item_serial", "asm_serial", "oem_serial", "make_model", "operating_system",
             "mso_installed", "processor_type", "processor_gen", "drive_type", "drive_size", "ram_type", "ram_size", 
             "total_passes", "total_fails", "total_nas", "total_incomplete"

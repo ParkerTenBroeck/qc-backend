@@ -224,6 +224,10 @@ macro_rules! dyn_qc_form_column {
                 let $ident = qc_forms::last_updated;
                 $succ_date
             }
+            "finalized" => {
+                let $ident = qc_forms::finalized;
+                $succ_bool
+            }
             "build_location" => {
                 let $ident = qc_forms::build_location;
                 $succ_text
