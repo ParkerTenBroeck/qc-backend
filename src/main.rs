@@ -14,20 +14,15 @@ extern crate rocket_sync_db_pools;
 
 use rocket_dyn_templates::Template;
 
+pub mod admin_pwd;
 pub mod database;
 pub mod json_text;
 pub mod qc_checklist;
-pub mod qurry_builder;
-pub mod schema;
 pub mod snapshots;
 pub mod templates;
 pub mod time;
-pub mod admin_pwd;
 
 pub mod copy_session;
-
-
-
 
 #[derive(Debug)]
 pub struct Config(pub serde_json::Value);
@@ -85,7 +80,6 @@ mod helper {
             ar.as_array().map(|v|v.contains(&val)).unwrap_or_else(||ar.eq(&val))
     });
 }
-
 
 #[launch]
 fn rocket() -> _ {
