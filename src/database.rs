@@ -1,13 +1,11 @@
 use crate::admin_pwd::Admin;
 use crate::json_text::JsonText;
-use diesel::result::DatabaseErrorInformation;
 use diesel::sqlite::Sqlite;
 use rocket::fairing::AdHoc;
 use rocket::form::Form;
-use rocket::http::hyper::Response;
 use rocket::response::Responder;
 use rocket::response::status::Accepted;
-use rocket::response::{status::Created, Debug};
+use rocket::response::status::Created;
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{Build, Rocket};
 
@@ -52,8 +50,8 @@ pub enum DataBaseError{
     #[error("Invalid column specified '{0:?}'")]
     InvalidColumn(String),
 }
-fn nothing<T, S>(_: &T,s: S) -> Result<S::Ok, S::Error> where S: serde::Serializer{
-    s.serialize_str("")
+fn nothing<T: std::fmt::Debug, S>(t: &T,s: S) -> Result<S::Ok, S::Error> where S: serde::Serializer{
+    s.serialize_str(&format!("{:?}", t))
 }
 
 
