@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+        <title>
+            Tokenizer Test
+        </title>
+    </head>
+    <body>
+        <textarea id="input" onkeyup="update(this)">bruh :)</textarea>
+        <pre id = "output">bruh : 3</pre>
+    </body>
+    <script>
+        async function parse(text) {
+            return await (await fetch("/api/tokenize/" + text, {
+                method: "GET",
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            })).json()
+        }
+        async function update(input){
+            let text = input.value;
+            let output = document.getElementById("output");
+
+            let send = encodeURI(text)
+            let tokenz = await parse(send);
+
+            output.innerHTML = text;
+
+            for(let i = tokenz.length - 1; i >= 0; i --){
+                let token = tokenz[i];
+                let range = document.createRange();
+                if (token.Ok){
+                    range.setStart(output.firstChild, token.Ok.start.char_index);
+                    range.setEnd(output.firstChild, token.Ok.end.char_index);
+                    let span =document.createElement("span");
+                    if (token.Ok.data.Value != null){
+                        switch (typeof token.Ok.data.Value){
+                            case "boolean":
+                            span.style = "background-color:SlateBlue;";
+                                break;
+                            case "number":
+                            span.style = "background-color:Orange;";
+                                break;
+                            case "string":
+                            span.style = "background-color:MediumSeaGreen;";
+                                break;
+                            case "object":
+                                if (token.Ok.data.Value){
+
+                                    span.style = "background-color:Gray;";
+                                }else{
+                                    span.style = "background-color:MediumSeaGreen;";
+                                }
+                                break;
+                            default:
+                            span.style = "background-color:Tomato;";
+                                break;
+                        }
+                    }else if (token.Ok.data.Ident){
+                        span.style = "background-color:DodgerBlue;";
+                    }else if (token.Ok.data.Path){
+                        span.style = "background-color:DeepPink;";
+                    }else{
+                        span.style = "background-color:LightGray;";
+                    }
+                    span.title = JSON.stringify(token.Ok.data)
+                    range.surroundContents(span);
+                }else{
+
+                    // span.style += "background-color:Tomato;";
+                }
+            }
+        }
+        update(document.getElementById("input"))
+
+    </script>
+</html>

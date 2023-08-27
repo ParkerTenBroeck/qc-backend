@@ -93,7 +93,7 @@ macro_rules! expect_value {
             _ => {
                 return Err(ExpressionParserError::UnexpectedKnownToken {
                     got: token,
-                    expected: Token::Value(String::new()),
+                    expected: Token::Value(serde_json::Value::Null),
                 })
             }
         }
@@ -206,9 +206,11 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
                         let ident = expect_ident!(unwrap_token!(self.tokenizer.next()));
                         expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
                         let high_value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                        return Ok(unwrap_visitor!(self
-                            .visitor
-                            .between(low_value, ident, high_value)));
+                        return Ok(unwrap_visitor!(self.visitor.between(
+                            low_value.to_string(),
+                            ident,
+                            high_value.to_string()
+                        )));
                     } else if tok.data == Token::Bang {
                         state_stack.push(State::BottomReturn2);
                         state_stack.push(State::BottomCalled);
@@ -221,19 +223,19 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
                     let val = match operator.data {
                         Token::Eq => {
                             let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                            unwrap_visitor!(self.visitor.eq(ident, value))
+                            unwrap_visitor!(self.visitor.eq(ident, value.to_string()))
                         }
                         Token::Gt => {
                             let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                            unwrap_visitor!(self.visitor.gt(ident, value))
+                            unwrap_visitor!(self.visitor.gt(ident, value.to_string()))
                         }
                         Token::Lt => {
                             let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                            unwrap_visitor!(self.visitor.lt(ident, value))
+                            unwrap_visitor!(self.visitor.lt(ident, value.to_string()))
                         }
                         Token::Colon => {
                             let value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                            unwrap_visitor!(self.visitor.colon(ident, value))
+                            unwrap_visitor!(self.visitor.colon(ident, value.to_string()))
                         }
                         _ => {
                             return Err(ExpressionParserError::UnexpectedTokenReason {

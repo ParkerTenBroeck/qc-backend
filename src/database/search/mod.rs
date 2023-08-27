@@ -34,8 +34,14 @@ pub enum VisitorError {
 }
 
 use self::diesel::prelude::*;
+use self::tokenizer::{TokenFull, TokenizerError, Tokenizer};
 
 use super::*;
+
+#[get("/tokenize/<str>")]
+pub(super) async fn tokenize(str: &str) -> Json<Vec<Result<TokenFull, TokenizerError>>> {
+    Tokenizer::new(str).collect::<Vec<_>>().into()
+}
 
 #[get("/get_post/<id>")]
 pub(super) async fn get_post(db: Db, id: i32) -> Option<Json<ExistingQCForm>> {

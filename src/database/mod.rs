@@ -47,6 +47,7 @@ pub fn stage() -> AdHoc {
                     create::new_post,
                     update::update_post,
                     search::search,
+                    search::tokenize,
                     update::finalize_post,
                     admin::definalize_post,
                     admin::delete_post
