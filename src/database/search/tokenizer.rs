@@ -59,53 +59,29 @@ impl<'a> Tokenizer<'a> {
 }
 
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ErrorFull {
-    pub data: TokenizerError,
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
+pub struct TokenErrorFull {
+    pub err: TokenizerError,
     pub start: TokenizerPosition,
     pub end: TokenizerPosition,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub enum TokenizerError {
-    InvalidChar(char, TokenizerPosition),
-    UnclosedString(TokenizerPosition),
-    UnfinishedEscape(TokenizerPosition),
-    InvalidEscape(char, TokenizerPosition),
+    InvalidChar(char),
+    UnclosedString,
+    UnfinishedEscape,
+    InvalidEscape(String),
     InvalidPath(char, &'static str),
-    UnclosedPathIndex(TokenizerPosition),
-    UnfinishedPathDot(TokenizerPosition),
-    UnclosedJson(TokenizerPosition),
-    InvalidJson {
-        msg: String,
-        start: TokenizerPosition,
-        end: TokenizerPosition,
-    },
-    InvalidNumber {
-        msg: String,
-        start: TokenizerPosition,
-        end: TokenizerPosition,
-    },
-}
-
-fn from_str(str: &str) -> (serde_json::Result<Value>, usize) {
-    let mut read = serde_json::de::StrRead::new(str);
-    let mut de = serde_json::de::Deserializer::new(&mut read);
-    let res = serde::de::Deserialize::deserialize(&mut de);
-    use serde_json::de::Read;
-    let pos = read.byte_offset();
-    (res, pos)
-}
-
-#[test]
-fn bruh() {
-    // Number::from_str(s)
-    let str = r#"[{}{,}]  ;"#;
-    println!("{:#?}", from_str(str));
+    UnclosedPathIndex,
+    UnfinishedPathDot,
+    UnclosedJson,
+    InvalidJson(String),
+    InvalidNumber(String),
 }
 
 impl<'a> Iterator for Tokenizer<'a> {
-    type Item = std::result::Result<TokenFull, TokenizerError>;
+    type Item = std::result::Result<TokenFull, TokenErrorFull>;
 
     fn next(&mut self) -> Option<Self::Item> {
         enum TokenizerState {
@@ -143,6 +119,8 @@ impl<'a> Iterator for Tokenizer<'a> {
         let mut last = current;
         let mut string_builder = String::new();
 
+        let mut escape_start = TokenizerPosition::default();
+
         loop {
             let char = self.chars.peek().copied();
             let mut ret = None;
@@ -156,6 +134,24 @@ impl<'a> Iterator for Tokenizer<'a> {
                 }
                 tmp
             };
+            macro_rules! error_inclusive {
+                ($expr:expr) => {
+                    ret = Some(Err(TokenErrorFull {
+                        err: $expr,
+                        start: self.current,
+                        end: next,
+                    }))
+                };
+            }
+            macro_rules! error_current_char {
+                ($expr:expr) => {
+                    ret = Some(Err(TokenErrorFull {
+                        err: $expr,
+                        start: last,
+                        end: next,
+                    }))
+                };
+            }
             match state {
                 TokenizerState::Default => match char {
                     Some('(') => ret = Some(Ok(Token::LPar)),
@@ -184,8 +180,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     Some(char) if char.is_alphabetic() => state = TokenizerState::Ident,
                     Some(char) if char.is_whitespace() => update_current = true,
                     Some(bad_char) => {
-                        let res = Err(TokenizerError::InvalidChar(bad_char, self.current));
-                        ret = Some(res);
+                        error_current_char!(TokenizerError::InvalidChar(bad_char));
                     }
                     None => return None,
                 },
@@ -199,7 +194,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     Some(char) if char.is_alphanumeric() || char == '_' => {}
                     _ => {
                         consume_char = false;
-                        let str = &self.str[self.current.byte_index..last.byte_index];
+                        let str = &self.str[self.current.byte_index..current.byte_index];
                         let token = if str.eq_ignore_ascii_case("false") {
                             Token::Value(Value::Bool(false))
                         } else if str.eq_ignore_ascii_case("true") {
@@ -220,12 +215,13 @@ impl<'a> Iterator for Tokenizer<'a> {
                         ret = Some(Ok(res));
                     }
                     Some('\\') => {
+                        escape_start = current;
                         state = TokenizerState::Escape;
                     }
                     Some(char) => {
                         string_builder.push(char);
                     }
-                    None => ret = Some(Err(TokenizerError::UnclosedString(self.current))),
+                    None => error_inclusive!(TokenizerError::UnclosedString),
                 },
                 TokenizerState::Escape => match char {
                     Some('\\') => {
@@ -240,11 +236,19 @@ impl<'a> Iterator for Tokenizer<'a> {
                         string_builder.push('\0');
                         state = TokenizerState::String;
                     }
-                    Some(char) => {
-                        ret = Some(Err(TokenizerError::InvalidEscape(char, self.current)));
+                    Some(_) => {
+                        ret = Some(Err(TokenErrorFull{
+                            err: TokenizerError::InvalidEscape(self.str[escape_start.byte_index..next.byte_index].to_owned()),
+                            start: escape_start,
+                            end: next,
+                        }));
                     }
                     None => {
-                        ret = Some(Err(TokenizerError::UnfinishedEscape(self.current)));
+                        ret = Some(Err(TokenErrorFull{
+                            err: TokenizerError::UnfinishedEscape,
+                            start: escape_start,
+                            end: next,
+                        }));
                     }
                 },
                 TokenizerState::PathDot => match char {
@@ -253,34 +257,34 @@ impl<'a> Iterator for Tokenizer<'a> {
                     }
                     Some(char) => {
                         consume_char = false;
-                        ret = Some(Err(TokenizerError::InvalidPath(
+                        error_inclusive!(TokenizerError::InvalidPath(
                             char,
                             "Expected identifier after dot operator",
-                        )));
+                        ));
                     }
                     None => {
-                        ret = Some(Err(TokenizerError::UnfinishedPathDot(self.current)));
+                        error_inclusive!(TokenizerError::UnfinishedPathDot);
                     }
                 },
                 TokenizerState::PathIndexStart => match char {
                     Some(char @ ']') => {
-                        ret = Some(Err(TokenizerError::InvalidPath(
+                        error_inclusive!(TokenizerError::InvalidPath(
                             char,
                             "Cannot close empty path index",
-                        )));
+                        ));
                     }
                     Some('0'..='9' | '#' | '-') => {
                         state = TokenizerState::PathIndex;
                     }
                     Some(char) => {
                         consume_char = false;
-                        ret = Some(Err(TokenizerError::InvalidPath(
+                        error_inclusive!(TokenizerError::InvalidPath(
                             char,
                             "Unexpected char found in path index",
-                        )));
+                        ));
                     }
                     None => {
-                        ret = Some(Err(TokenizerError::UnclosedPathIndex(self.current)));
+                        error_inclusive!(TokenizerError::UnclosedPathIndex);
                     }
                 },
                 TokenizerState::PathIndex => match char {
@@ -290,13 +294,13 @@ impl<'a> Iterator for Tokenizer<'a> {
                     Some('0'..='9' | '#' | '-') => {}
                     Some(char) => {
                         consume_char = false;
-                        ret = Some(Err(TokenizerError::InvalidPath(
+                        error_inclusive!(TokenizerError::InvalidPath(
                             char,
                             "Unexpected char found in path index",
-                        )));
+                        ));
                     }
                     None => {
-                        ret = Some(Err(TokenizerError::UnclosedPathIndex(self.current)));
+                        error_inclusive!(TokenizerError::UnclosedPathIndex);
                     }
                 },
                 TokenizerState::PathIdent => match char {
@@ -310,7 +314,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     _ => {
                         consume_char = false;
                         let token = Token::Path(
-                            self.str[self.current.byte_index..last.byte_index].to_owned(),
+                            self.str[self.current.byte_index..current.byte_index].to_owned(),
                         );
                         ret = Some(Ok(token));
                     }
@@ -326,9 +330,9 @@ impl<'a> Iterator for Tokenizer<'a> {
                 TokenizerState::NumberLeadingZero => {
                     match char{
                         Some('1'..='9') => state = TokenizerState::Number,
-                        Some('0') => ret = Some(Err(TokenizerError::InvalidNumber { msg: "Too many leading zeros".into(), start: self.current, end: last })),
+                        Some('0') => error_inclusive!(TokenizerError::InvalidNumber("Too many leading zeros".into())),
                         Some('e'|'E') => state = TokenizerState::NumberEPM,
-                        Some('.') => state = TokenizerState::NumberDotDig,
+                        Some('.') => state = TokenizerState::NumberDot,
                         _ =>{
                             consume_char = false;
                             ret = Some(Ok(Token::Value(Value::Number(0.into()))));
@@ -339,13 +343,13 @@ impl<'a> Iterator for Tokenizer<'a> {
                     match char{
                         Some('0'..='9') => state = TokenizerState::Number,
                         Some('e'|'E') => state = TokenizerState::NumberEPM,
-                        Some('.') => state = TokenizerState::NumberDotDig,
+                        Some('.') => state = TokenizerState::NumberDot,
                         _ => {
                             consume_char = false;
-                            match Number::from_str(&self.str[self.current.byte_index..last.byte_index]){
+                            match Number::from_str(&self.str[self.current.byte_index..current.byte_index]){
                                 Ok(ok) => ret = Some(Ok(Token::Value(Value::Number(ok)))),
                                 Err(er) => {
-                                    ret = Some(Err(TokenizerError::InvalidNumber { msg: format!("{:?}", er), start: self.current, end: last }));
+                                    error_inclusive!(TokenizerError::InvalidNumber (format!("{:?}", er)));
                                 },
                             }
                         }
@@ -355,7 +359,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     match char{
                         Some('0'..='9') => state = TokenizerState::NumberDotDig,
                         _ => {
-                            ret = Some(Err(TokenizerError::InvalidNumber { msg: "Expected 0-9 after .".into(), start: self.current, end: current }));
+                            error_inclusive!(TokenizerError::InvalidNumber("Expected 0-9 after .".into()));
                         },
                     }
                 }
@@ -365,10 +369,10 @@ impl<'a> Iterator for Tokenizer<'a> {
                         Some('e'|'E') => state = TokenizerState::NumberEPM,
                         _ => {
                             consume_char = false;
-                            match Number::from_str(&self.str[self.current.byte_index..last.byte_index]){
+                            match Number::from_str(&self.str[self.current.byte_index..current.byte_index]){
                                 Ok(ok) => ret = Some(Ok(Token::Value(Value::Number(ok)))),
                                 Err(er) => {
-                                    ret = Some(Err(TokenizerError::InvalidNumber { msg: format!("{:?}", er), start: self.current, end: last }));
+                                    error_inclusive!(TokenizerError::InvalidNumber(format!("{:?}", er)));
                                 },
                             }
                         }
@@ -376,17 +380,17 @@ impl<'a> Iterator for Tokenizer<'a> {
                 },
                 TokenizerState::NumberEPM => match char{
                     Some('+'|'-'|'0'..='9') => state = TokenizerState::NumberED,
-                    _ => ret = Some(Err(TokenizerError::InvalidNumber { msg: "invalid char, expected + or - or 0-9".into(), start: self.current, end: last })),
+                    _ => error_inclusive!(TokenizerError::InvalidNumber("invalid char, expected + or - or 0-9".into())),
                 },
                 TokenizerState::NumberED => {
                     match char{
                         Some('0'..='9') => state = TokenizerState::NumberED,
                         _ => {
                             consume_char = false;
-                            match Number::from_str(&self.str[self.current.byte_index..last.byte_index]){
+                            match Number::from_str(&self.str[self.current.byte_index..current.byte_index]){
                                 Ok(ok) => ret = Some(Ok(Token::Value(Value::Number(ok)))),
                                 Err(er) => {
-                                    ret = Some(Err(TokenizerError::InvalidNumber { msg: format!("{:?}", er), start: self.current, end: last }));
+                                    error_inclusive!(TokenizerError::InvalidNumber(format!("{:?}", er)));
                                 },
                             }
                         }
@@ -403,11 +407,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                                     ret = Some(Ok(Token::Value(ok)));
                                 }
                                 Err(err) => {
-                                    ret = Some(Err(TokenizerError::InvalidJson {
-                                        msg: format!("{:?}", err),
-                                        start: self.current,
-                                        end: current,
-                                    }));
+                                    error_inclusive!(TokenizerError::InvalidJson(format!("{:?}", err)));
                                 }
                             }
                         } else {
@@ -428,7 +428,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                         }
                     }
                     (_, Some(_)) => {}
-                    (_, None) => ret = Some(Err(TokenizerError::UnclosedJson(self.current))),
+                    (_, None) =>  error_inclusive!(TokenizerError::UnclosedJson),
                 },
                 TokenizerState::JsonStr {
                     obj,
@@ -450,7 +450,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                             escape: false,
                         }
                     }
-                    None => ret = Some(Err(TokenizerError::UnclosedString(self.current))),
+                    None => error_inclusive!(TokenizerError::UnclosedString),
                 },
             }
 
@@ -464,7 +464,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                         Some(Ok(TokenFull {
                             data: ok,
                             start: self.current,
-                            end: current,
+                            end: next,
                         }))
                     } else {
                         Some(Ok(TokenFull {

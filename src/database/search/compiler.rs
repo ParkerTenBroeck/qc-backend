@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use serde::Serialize;
 use serde_json::Value;
 
-use super::tokenizer::{Token, TokenFull, Tokenizer, TokenizerError};
+use super::tokenizer::{Token, TokenFull, Tokenizer, TokenErrorFull};
 
 pub struct ExpressionParser<'a, 'b, T, E> {
     tokenizer: Peekable<Tokenizer<'a>>,
@@ -30,7 +30,7 @@ pub trait Visitor<T, E> {
 
 #[derive(Debug, Clone, Serialize, thiserror::Error)]
 pub enum ExpressionParserError<T> {
-    TokenizerError(TokenizerError),
+    TokenizerError(TokenErrorFull),
     UnexpectedEndOfExpression,
     UnexpectedKnownToken {
         expected: Token,

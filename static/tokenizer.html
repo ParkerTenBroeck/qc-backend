@@ -71,8 +71,13 @@
                     span.title = JSON.stringify(token.Ok.data)
                     range.surroundContents(span);
                 }else{
-
-                    // span.style += "background-color:Tomato;";
+                    console.log(token);
+                    let span =document.createElement("span");
+                    range.setStart(output.firstChild, token.Err.start.char_index);
+                    range.setEnd(output.firstChild, token.Err.end.char_index);
+                    span.title = JSON.stringify(token.Err.err)
+                    span.style = "background-color:Tomato;";
+                    range.surroundContents(span);
                 }
             }
         }

@@ -34,12 +34,12 @@ pub enum VisitorError {
 }
 
 use self::diesel::prelude::*;
-use self::tokenizer::{TokenFull, TokenizerError, Tokenizer};
+use self::tokenizer::{TokenFull, Tokenizer, TokenErrorFull};
 
 use super::*;
 
 #[get("/tokenize/<str>")]
-pub(super) async fn tokenize(str: &str) -> Json<Vec<Result<TokenFull, TokenizerError>>> {
+pub(super) async fn tokenize(str: &str) -> Json<Vec<Result<TokenFull, TokenErrorFull>>> {
     Tokenizer::new(str).collect::<Vec<_>>().into()
 }
 
