@@ -10,8 +10,48 @@
         </title>
     </head>
     <body>
-        <textarea id="input" onkeyup="update(this)">bruh :)</textarea>
-        <pre id = "output">bruh : 3</pre>
+        <div style="display: flex;">
+        <textarea style="margin-right:5px;width:49%;height:600px;display: inline-block;"id="input" onkeyup="update(this)">
+        
+( ) | * & < > : ^ ! = % #
+
+"string" 12 0.5 -1 - -1 -2 0 4 -4.0 0. 00. 
+
+lol.  this[  is[1] a[] test.to[3] 
+
+TRUE FALSE true false TrUe FaLsE 
+
+["arr", 12, false, null]
+
+{
+ "inline": 12,
+ "json": "data"
+}
+
+{
+ "inline": 12,
+ "json": "data-malformed",
+}    [{"same" "here"},]
+
+"
+multi 
+line string
+"
+
+"escapes ;) \n \r \" \' \0 \" \\"
+
+NULL null NuLl
+
+"slike"       -120.0e-10 false null 
+true [] {"bruh":2} & $ ! this is a test to see how "like" 
+s "like" "slike" [12, 55] null 
+
+test.this.si[2]
+"
+ test"
+        </textarea>
+        <pre style="padding-left:5px;border:1px solid black;display: inline-block;" id = "output"></pre>    
+        </div>
     </body>
     <script>
         async function parse(text) {
@@ -22,11 +62,13 @@
                 }
             })).json()
         }
+        
         async function update(input){
             let text = input.value;
             let output = document.getElementById("output");
 
-            let send = encodeURI(text)
+            let send = encodeURI(text);
+            send = send.replaceAll("#", "%23");
             let tokenz = await parse(send);
 
             output.innerHTML = text;
@@ -71,7 +113,6 @@
                     span.title = JSON.stringify(token.Ok.data)
                     range.surroundContents(span);
                 }else{
-                    console.log(token);
                     let span =document.createElement("span");
                     range.setStart(output.firstChild, token.Err.start.char_index);
                     range.setEnd(output.firstChild, token.Err.end.char_index);

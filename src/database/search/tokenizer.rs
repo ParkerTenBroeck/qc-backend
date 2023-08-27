@@ -143,6 +143,15 @@ impl<'a> Iterator for Tokenizer<'a> {
                     }))
                 };
             }
+            macro_rules! error_exclusive {
+                ($expr:expr) => {
+                    ret = Some(Err(TokenErrorFull {
+                        err: $expr,
+                        start: self.current,
+                        end: current,
+                    }))
+                };
+            }
             macro_rules! error_current_char {
                 ($expr:expr) => {
                     ret = Some(Err(TokenErrorFull {
@@ -228,8 +237,20 @@ impl<'a> Iterator for Tokenizer<'a> {
                         string_builder.push('\\');
                         state = TokenizerState::String;
                     }
+                    Some('n') => {
+                        string_builder.push('\n');
+                        state = TokenizerState::String;
+                    }
+                    Some('r') => {
+                        string_builder.push('\r');
+                        state = TokenizerState::String;
+                    }
                     Some('"') => {
                         string_builder.push('"');
+                        state = TokenizerState::String;
+                    }
+                    Some('\'') => {
+                        string_builder.push('\'');
                         state = TokenizerState::String;
                     }
                     Some('0') => {
@@ -257,7 +278,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                     }
                     Some(char) => {
                         consume_char = false;
-                        error_inclusive!(TokenizerError::InvalidPath(
+                        error_exclusive!(TokenizerError::InvalidPath(
                             char,
                             "Expected identifier after dot operator",
                         ));
@@ -349,7 +370,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                             match Number::from_str(&self.str[self.current.byte_index..current.byte_index]){
                                 Ok(ok) => ret = Some(Ok(Token::Value(Value::Number(ok)))),
                                 Err(er) => {
-                                    error_inclusive!(TokenizerError::InvalidNumber (format!("{:?}", er)));
+                                    error_exclusive!(TokenizerError::InvalidNumber (format!("{:?}", er)));
                                 },
                             }
                         }
@@ -359,7 +380,8 @@ impl<'a> Iterator for Tokenizer<'a> {
                     match char{
                         Some('0'..='9') => state = TokenizerState::NumberDotDig,
                         _ => {
-                            error_inclusive!(TokenizerError::InvalidNumber("Expected 0-9 after .".into()));
+                            consume_char = false;
+                            error_exclusive!(TokenizerError::InvalidNumber("Expected 0-9 after .".into()));
                         },
                     }
                 }
@@ -372,7 +394,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                             match Number::from_str(&self.str[self.current.byte_index..current.byte_index]){
                                 Ok(ok) => ret = Some(Ok(Token::Value(Value::Number(ok)))),
                                 Err(er) => {
-                                    error_inclusive!(TokenizerError::InvalidNumber(format!("{:?}", er)));
+                                    error_exclusive!(TokenizerError::InvalidNumber(format!("{:?}", er)));
                                 },
                             }
                         }
@@ -390,7 +412,7 @@ impl<'a> Iterator for Tokenizer<'a> {
                             match Number::from_str(&self.str[self.current.byte_index..current.byte_index]){
                                 Ok(ok) => ret = Some(Ok(Token::Value(Value::Number(ok)))),
                                 Err(er) => {
-                                    error_inclusive!(TokenizerError::InvalidNumber(format!("{:?}", er)));
+                                    error_exclusive!(TokenizerError::InvalidNumber(format!("{:?}", er)));
                                 },
                             }
                         }
