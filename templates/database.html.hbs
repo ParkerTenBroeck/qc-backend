@@ -94,6 +94,34 @@
             </div>
         </div>
         <div style="padding-left:4px">
+            <div>Failed Qc2</div>
+            <div data-toggle="buttons" role="toolbar">
+                <div value='!(qc_answers:"%:f_%")&(qc_answers:"%:_f%")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
+                aria-label="First group" data-toggle="button">
+                    <label invert="false" onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio"   name="options"  autocomplete="off">Yes</input>
+                    </label>
+                    <label invert="true"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio" name="options" autocomplete="off">No</input>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div style="padding-left:4px">
+            <div>Failed Qc1</div>
+            <div data-toggle="buttons" role="toolbar">
+                <div value='(qc_answers:"%:f_%")&!(qc_answers:"%:_f%")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
+                aria-label="First group" data-toggle="button">
+                    <label invert="false" onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio"   name="options"  autocomplete="off">Yes</input>
+                    </label>
+                    <label invert="true"  onclick="unselectable_radio(this)" class="btn btn-secondary btn-sm">
+                        <input type="radio" name="options" autocomplete="off">No</input>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div style="padding-left:4px">
             <div>Complete</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='!(qc_answers:"%:i_%"|qc_answers:"%:_i%")&!(sales_order=""|qc1_initial=""|asm_serial="")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
