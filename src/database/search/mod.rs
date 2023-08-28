@@ -189,7 +189,15 @@ macro_rules! unwrap_visitor_value_exression {
 }
 
 impl compiler::Visitor<DynExpr, VisitorError> for VisitorTest {
-    fn eq(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+    fn eq(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        let value = if value.is_string(){
+            match value{
+                Value::String(str) => str,
+                _ => unreachable!()
+            }
+        }else{
+            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
+        };
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -222,7 +230,15 @@ impl compiler::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Err(VisitorError::InvalidColumnSelected(ident)) }
         )
     }
-    fn lt(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+    fn lt(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        let value = if value.is_string(){
+            match value{
+                Value::String(str) => str,
+                _ => unreachable!()
+            }
+        }else{
+            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
+        };
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -255,7 +271,15 @@ impl compiler::Visitor<DynExpr, VisitorError> for VisitorTest {
             { Err(VisitorError::InvalidColumnSelected(ident)) }
         )
     }
-    fn gt(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+    fn gt(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        let value = if value.is_string(){
+            match value{
+                Value::String(str) => str,
+                _ => unreachable!()
+            }
+        }else{
+            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
+        };
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -291,10 +315,26 @@ impl compiler::Visitor<DynExpr, VisitorError> for VisitorTest {
 
     fn between(
         &mut self,
-        low_value: String,
+        low_value: Value,
         ident: String,
-        high_value: String,
+        high_value: Value,
     ) -> Result<DynExpr, VisitorError> {
+        let low_value = if low_value.is_string(){
+            match low_value{
+                Value::String(str) => str,
+                _ => unreachable!()
+            }
+        }else{
+            serde_json::to_string(&low_value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
+        };
+        let high_value = if high_value.is_string(){
+            match high_value{
+                Value::String(str) => str,
+                _ => unreachable!()
+            }
+        }else{
+            serde_json::to_string(&high_value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
+        };
         dyn_qc_form_column!(
             ident.as_str(),
             column,
@@ -349,11 +389,19 @@ impl compiler::Visitor<DynExpr, VisitorError> for VisitorTest {
         )
     }
 
-    fn colon(&mut self, ident: String, value: String) -> Result<DynExpr, VisitorError> {
+    fn colon(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
         // qc_forms::creation_date.sql("")
         // diesel::dsl::sql()
         // diesel_dynamic_schema::table("qc_forms").column("c").sql("");
         // diesel::sql_function!
+        let value = if value.is_string(){
+            match value{
+                Value::String(str) => str,
+                _ => unreachable!()
+            }
+        }else{
+            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
+        };
         dyn_qc_form_column!(
             ident.as_str(),
             _column,

@@ -22,10 +22,10 @@ pub struct NewQCForm {
     #[serde(default)]
     pub finalized: bool,
     // #[serde(skip_deserializing)]
-    // #[serde(default = "time_default")]
+    #[serde(default = "time_default")]
     pub creation_date: Time,
     // #[serde(skip_deserializing)]
-    // #[serde(default = "time_default")]
+    #[serde(default = "time_default")]
     pub last_updated: Time,
     pub build_location: String,
     pub build_type: String,
