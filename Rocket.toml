@@ -8,7 +8,7 @@ url = "db/diesel/db.sqlite"
 timeout = 10
 
 [release.databases.diesel]
-url = "~/qc-database/db.sqlite"
+url = "../qc-database/db.sqlite"
 
 [global]
 address = "0.0.0.0"
