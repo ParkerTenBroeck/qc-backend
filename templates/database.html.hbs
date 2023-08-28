@@ -52,7 +52,7 @@
         </script>
         
         <div style="margin-left:4px">
-            <div>Incomplete</div>
+            <div title="Any QC question is incomplete (not filled in)">Incomplete</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='qc_answers:"%:i_%"|qc_answers:"%:_i%"' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
@@ -66,7 +66,7 @@
             </div>
         </div>
         <div style="padding-left:4px">
-            <div>Failed</div>
+            <div title="Any QC question is marked as Fail">Failed</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='qc_answers:"%:f_%"|qc_answers:"%:_f%"' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
@@ -80,7 +80,7 @@
             </div>
         </div>
         <div style="padding-left:4px">
-            <div>Passed</div>
+            <div title="All QC questions are Pass or N/A">Passed</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='!(qc_answers:"%:i_%"|qc_answers:"%:_i%"|qc_answers:"%:f_%"|qc_answers:"%:_f%")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
@@ -94,7 +94,7 @@
             </div>
         </div>
         <div style="padding-left:4px">
-            <div>Failed Qc2</div>
+            <div title="Failed in QC2 but not in QC1">Failed Qc2</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='!(qc_answers:"%:f_%")&(qc_answers:"%:_f%")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
@@ -108,7 +108,7 @@
             </div>
         </div>
         <div style="padding-left:4px">
-            <div>Failed Qc1</div>
+            <div title="Failed in QC1 but not in QC2">Failed Qc1</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='(qc_answers:"%:f_%")&!(qc_answers:"%:_f%")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
@@ -122,7 +122,7 @@
             </div>
         </div>
         <div style="padding-left:4px">
-            <div>Complete</div>
+            <div title="All optional fields are filled in and no QC questions are incomplete">Complete</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='!(qc_answers:"%:i_%"|qc_answers:"%:_i%")&!(sales_order=""|qc1_initial=""|asm_serial="")' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
@@ -136,7 +136,7 @@
             </div>
         </div>
         <div style="padding-left:4px">
-            <div>Finalized</div>
+            <div title="Form marked as finalized">Finalized</div>
             <div data-toggle="buttons" role="toolbar">
                 <div value='finalized=true' class="easy-qurry-yes-no btn-group-toggle btn-group me-2" role="group"
                 aria-label="First group" data-toggle="button">
