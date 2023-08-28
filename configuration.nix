@@ -47,10 +47,10 @@
       su - rct -c "cd ~;git clone -b stable https://github.com/ParkerTenBroeck/qc-backend.git" || true
       
       rm /home/rct/hard-update.sh || true
-      su - rct -c "ln -s ~/qc-backend/hard-update.sh ~/hard-update.sh;chmod +x ~/hard-update.sh" || true
+      su - rct -c "ln -s ~/qc-backend/hard-update.sh ~/hard-update.sh;chmod +x ~/qc-backend/hard-update.sh" || true
       
       rm /home/rct/update.sh || true
-      su - rct -c "ln -s ~/qc-backend/update.sh ~/update.sh;chmod +x ~/update.sh" || true
+      su - rct -c "ln -s ~/qc-backend/update.sh ~/update.sh;chmod +x ~/qc-backend/update.sh" || true
       
       su - rct -c "chmod +x ~/qc-backend/run-service.sh" || true
       su - rct -c "~/qc-backend/run-service.sh"
