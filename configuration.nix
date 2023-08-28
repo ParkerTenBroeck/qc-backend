@@ -44,7 +44,7 @@
       rm /home/rct/restart-qc.sh || true
       su - rct -c "echo sudo systemctl restart qc-server.service > restart-qc.sh;chmod +x ~/restart-qc.sh" || true
 
-      su - rct -c "cd ~;git clone https://github.com/ParkerTenBroeck/qc-backend.git" || true
+      su - rct -c "cd ~;git clone -b stable https://github.com/ParkerTenBroeck/qc-backend.git" || true
       
       rm /home/rct/hard-update.sh || true
       su - rct -c "ln -s ~/qc-backend/hard-update.sh ~/hard-update.sh;chmod +x ~/hard-update.sh" || true
