@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <title>
+        Compiler Test
+    </title>
+    <style>
+        body {
+            font-family: Calibri, Segoe, "Segoe UI", "Gill Sans", "Gill Sans MT", sans-serif;
+        }
+
+        /* It's supposed to look like a tree diagram */
+        .tree,
+        .tree ul,
+        .tree li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+
+        .tree {
+            margin: 0 0 1em;
+            text-align: center;
+        }
+
+        .tree,
+        .tree ul {
+            display: table;
+        }
+
+        .tree ul {
+            width: 100%;
+        }
+
+        .tree li {
+            display: table-cell;
+            padding: .5em 0;
+            vertical-align: top;
+        }
+
+        /* _________ */
+        .tree li:before {
+            outline: solid 1px #666;
+            content: "";
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        .tree li:first-child:before {
+            left: 50%;
+        }
+
+        .tree li:last-child:before {
+            right: 50%;
+        }
+
+        .tree code,
+        .tree span {
+            border: solid .1em #666;
+            border-radius: .2em;
+            display: inline-block;
+            margin: 0 .2em .5em;
+            padding: .2em .5em;
+            position: relative;
+        }
+
+        /* If the tree represents DOM structure */
+        .tree code {
+            font-family: monaco, Consolas, 'Lucida Console', monospace;
+        }
+
+        /* | */
+        .tree ul:before,
+        .tree code:before,
+        .tree span:before {
+            outline: solid 1px #666;
+            content: "";
+            height: .5em;
+            left: 50%;
+            position: absolute;
+        }
+
+        .tree ul:before {
+            top: -.5em;
+        }
+
+        .tree code:before,
+        .tree span:before {
+            top: -.55em;
+        }
+
+        /* The root node doesn't connect upwards */
+        .tree>li {
+            margin-top: 0;
+        }
+
+        .tree>li:before,
+        .tree>li:after,
+        .tree>li>code:before,
+        .tree>li>span:before {
+            outline: none;
+        }
+        html,
+body {
+	height: 100%;
+}
+    </style>
+</head>
+
+<body>
+        <div style="display: flex;justify-content: center;align-items: center;flex-direction: column;height:100%">
+            <div style="display: flex;width: 100%;height: 50%;">
+                <textarea style="margin-right:5px;width:50%;;font-size:16px"id="input" onkeyup="update(this)">
+                    !(qc_answers:"%:f_%"|qc_answers:"%:_f%")&(!(qc_answers:"%:f_%")&(qc_answers:"%:_f%"))&(!(qc_answers:"%:i_%"|qc_answers:"%:_i%")&!(sales_order=""|qc1_initial=""|asm_serial=""))
+                </textarea>
+            <pre style="max-width:50%;padding-left:5px;border:1px solid black;white-space: pre-wrap;font-size:16px " ><code id = "output"></code></pre>   
+            </div>
+            
+            <div style="max-width: 100vw;max-height: 50vw;">
+                <ul style="overflow:scroll;" id="tree" class="tree">
+                    <li>
+        
+                        <span>bruh1</span>
+                        <ul>
+        
+                            <li> <code>bruh</code></li>
+                            <li> <code>bruh</code></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+</body>
+<script>
+    update(document.getElementById("input"));
+
+    async function parse(text) {
+            return await (await fetch("/api/tokenize/" + text, {
+                method: "GET",
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            })).json()
+        }
+
+        async function update(input){
+            await update_parse(input);
+            await update_compiler(input);
+        }
+        
+        async function update_parse(input){
+            let text = input.value;
+            let output = document.getElementById("output");
+
+            let send = encodeURI(text);
+            send = send.replaceAll("#", "%23");
+            let tokenz = await parse(send);
+
+            output.innerHTML = text;
+
+            for(let i = tokenz.length - 1; i >= 0; i --){
+                let token = tokenz[i];
+                let range = document.createRange();
+                if (token.Ok){
+                    range.setStart(output.firstChild, token.Ok.start.char_index);
+                    range.setEnd(output.firstChild, token.Ok.end.char_index);
+                    let span =document.createElement("span");
+                    if (token.Ok.data.Value != null){
+                        switch (typeof token.Ok.data.Value){
+                            case "boolean":
+                            span.style = "background-color:SlateBlue;";
+                                break;
+                            case "number":
+                            span.style = "background-color:Orange;";
+                                break;
+                            case "string":
+                            span.style = "background-color:MediumSeaGreen;";
+                                break;
+                            case "object":
+                                if (token.Ok.data.Value){
+
+                                    span.style = "background-color:Gray;";
+                                }else{
+                                    span.style = "background-color:MediumSeaGreen;";
+                                }
+                                break;
+                            default:
+                            span.style = "background-color:Tomato;";
+                                break;
+                        }
+                    }else if (token.Ok.data.Ident){
+                        span.style = "background-color:DodgerBlue;";
+                    }else if (token.Ok.data.Path){
+                        span.style = "background-color:DeepPink;";
+                    }else{
+                        span.style = "background-color:LightGray;";
+                    }
+                    span.title = JSON.stringify(token.Ok.data)
+                    range.surroundContents(span);
+                }else{
+                    let span =document.createElement("span");
+                    range.setStart(output.firstChild, token.Err.start.char_index);
+                    range.setEnd(output.firstChild, token.Err.end.char_index);
+                    span.title = JSON.stringify(token.Err.err)
+                    span.style = "background-color:Tomato;";
+                    range.surroundContents(span);
+                }
+            }
+        }
+    async function compile(val) {
+        return await (await fetch("/api/compile/" + val, {
+            method: "GET",
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })).json()
+    }
+    async function update_compiler(val) {
+        let text = val.value;
+        text = encodeURI(text);
+        let res = await compile(text);
+        console.log(res);
+
+        if (res.Ok) {
+            let tree = document.getElementById("tree");
+            tree.innerHTML = "";
+            tree.appendChild(make_shit(res.Ok));
+        } else {
+            let err = res.Err;
+            console.log(err);
+        }
+    }
+    function make_shit(item) {
+        console.log(item);
+        let type = item.type;
+        let data = item.data;
+        if (type === "Or" | type === "And" | type === "Not") {
+            let root_element = document.createElement("li");
+            {
+                let type_node = document.createElement("code");
+                type_node.innerText = type;
+                root_element.appendChild(type_node);
+            }
+
+            let data_node = document.createElement("ul");
+            if (data.length){
+                for(let i = 0; i < data.length; i ++){
+                    let data_element = data[i];
+                    data_node.appendChild(make_shit(data_element));
+                }
+            }else{
+                data_node.appendChild(make_shit(data));
+            }
+            root_element.appendChild(data_node);
+            return root_element;
+        } else {
+            let root_element = document.createElement("li");
+            {
+                let type_node = document.createElement("code");
+                type_node.innerText = type;
+                root_element.appendChild(type_node);
+            }
+            let data_node = document.createElement("ul");
+            for(let i = 0; i < data.length; i ++){
+                let data_element = data[i];
+                let val_1 = document.createElement("li");
+                let val_2 = document.createElement("code");
+                val_2.innerText = data_element;
+                val_1.appendChild(val_2);
+                data_node.appendChild(val_1);
+            }
+            root_element.appendChild(data_node);
+            return root_element;
+        }
+    }
+</script>
+
+</html>

@@ -33,6 +33,7 @@ pub enum VisitorError {
     InvalidColumnSelected(String),
 }
 
+use self::compiler::{Visitor, ExpressionParserError};
 use self::diesel::prelude::*;
 use self::tokenizer::{TokenFull, Tokenizer, TokenErrorFull};
 
@@ -41,6 +42,62 @@ use super::*;
 #[get("/tokenize/<str>")]
 pub(super) async fn tokenize(str: &str) -> Json<Vec<Result<TokenFull, TokenErrorFull>>> {
     Tokenizer::new(str).collect::<Vec<_>>().into()
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub enum Infallible{}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", content="data")]
+pub enum Node{
+    Eq(String, Value),
+    Lt(String, Value),
+    Gt(String, Value),
+    Between(Value, String, Value),
+    Colon(String, Value),
+    And(Box<Node>, Box<Node>),
+    Or(Box<Node>, Box<Node>),
+    Not(Box<Node>),
+}
+
+struct CompilerVisitor;
+impl Visitor<Node, Infallible> for CompilerVisitor{
+    fn eq(&mut self, ident: String, value: Value) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Eq(ident, value))
+    }
+
+    fn lt(&mut self, ident: String, value: Value) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Lt(ident, value))
+    }
+
+    fn gt(&mut self, ident: String, value: Value) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Gt(ident, value))
+    }
+
+    fn colon(&mut self, ident: String, value: Value) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Colon(ident, value))
+    }
+
+    fn between(&mut self, low_value: Value, ident: String, high_value: Value) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Between(low_value, ident, high_value))
+    }
+
+    fn or(&mut self, ls: Node, rs: Node) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Or(Box::new(ls), Box::new(rs)))
+    }
+
+    fn and(&mut self, ls: Node, rs: Node) -> std::result::Result<Node, Infallible> {
+        Ok(Node::And(Box::new(ls), Box::new(rs)))
+    }
+
+    fn not(&mut self, expr: Node) -> std::result::Result<Node, Infallible> {
+        Ok(Node::Not(Box::new(expr)))
+    }
+}
+
+#[get("/compile/<str>")]
+pub(super) async fn compile(str: &str) -> Json<Result<Node, ExpressionParserError<Infallible>>> {
+    compiler::ExpressionParser::new(str, &mut CompilerVisitor{}).parse().into()
 }
 
 #[get("/get_post/<id>")]
