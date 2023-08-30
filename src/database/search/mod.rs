@@ -1,3 +1,4 @@
+use diesel::sql_types::Bool;
 use diesel::sqlite::Sqlite;
 
 use rocket::form::Form;
@@ -8,7 +9,6 @@ use rocket_sync_db_pools::diesel;
 use serde_json::Value;
 
 use crate::database::search::compiler::ExpressionParser;
-use crate::time::Time;
 
 pub mod compiler;
 pub mod tokenizer;
@@ -29,13 +29,13 @@ pub enum VisitorError {
     InvalidTypeUsedWithBetweenOperator(&'static str),
     #[error("Error while trying to parse json data/values: {0}")]
     JsonParsingError(String),
-    #[error("Invalid Column Selected: {0}")]
-    InvalidColumnSelected(String),
+    #[error("Invalid Column: {0}")]
+    InvalidColumn(String),
 }
 
-use self::compiler::{Visitor, ExpressionParserError};
+use self::compiler::{ExpressionParserError, Visitor};
 use self::diesel::prelude::*;
-use self::tokenizer::{TokenFull, Tokenizer, TokenErrorFull};
+use self::tokenizer::{TokenErrorFull, TokenFull, Tokenizer};
 
 use super::*;
 
@@ -45,11 +45,11 @@ pub(super) async fn tokenize(str: &str) -> Json<Vec<Result<TokenFull, TokenError
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub enum Infallible{}
+pub enum Infallible {}
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(tag = "type", content="data")]
-pub enum Node{
+#[serde(tag = "type", content = "data")]
+pub enum Node {
     Eq(String, Value),
     Lt(String, Value),
     Gt(String, Value),
@@ -61,7 +61,7 @@ pub enum Node{
 }
 
 struct CompilerVisitor;
-impl Visitor<Node, Infallible> for CompilerVisitor{
+impl Visitor<Node, Infallible> for CompilerVisitor {
     fn eq(&mut self, ident: String, value: Value) -> std::result::Result<Node, Infallible> {
         Ok(Node::Eq(ident, value))
     }
@@ -78,7 +78,12 @@ impl Visitor<Node, Infallible> for CompilerVisitor{
         Ok(Node::Colon(ident, value))
     }
 
-    fn between(&mut self, low_value: Value, ident: String, high_value: Value) -> std::result::Result<Node, Infallible> {
+    fn between(
+        &mut self,
+        low_value: Value,
+        ident: String,
+        high_value: Value,
+    ) -> std::result::Result<Node, Infallible> {
         Ok(Node::Between(low_value, ident, high_value))
     }
 
@@ -97,7 +102,9 @@ impl Visitor<Node, Infallible> for CompilerVisitor{
 
 #[get("/compile/<str>")]
 pub(super) async fn compile(str: &str) -> Json<Result<Node, ExpressionParserError<Infallible>>> {
-    compiler::ExpressionParser::new(str, &mut CompilerVisitor{}).parse().into()
+    compiler::ExpressionParser::new(str, &mut CompilerVisitor {})
+        .parse()
+        .into()
 }
 
 #[get("/get_post/<id>")]
@@ -106,6 +113,246 @@ pub(super) async fn get_post(db: Db, id: i32) -> Option<Json<ExistingQCForm>> {
         .await
         .map(Json)
         .ok()
+}
+
+fn to_sql_str(value: &Value) -> String {
+    match value {
+        Value::Null => "NULL".into(),
+        Value::Bool(bool) => (if *bool { "1" } else { "0" }).into(),
+        Value::Number(num) => {
+            if let Some(uint) = num.as_u64() {
+                format!("{}", uint as i64)
+            } else if let Some(int) = num.as_i64() {
+                format!("{}", int)
+            } else if let Some(float) = num.as_f64() {
+                format!("{}", float)
+            } else {
+                num.to_string()
+            }
+        }
+        string @ Value::String(_) => serde_json::to_string(string).unwrap_or("NULL".into()),
+        other => serde_json::to_string(other)
+            .and_then(|s| serde_json::to_string(&Value::String(s)))
+            .unwrap_or("NULL".into()),
+    }
+}
+
+#[derive(Debug)]
+pub enum ColumnType {
+    PrimaryId,
+    Number,
+    Datetime,
+    Text,
+    Boolean,
+    Real,
+    Json,
+    QcAnswer,
+}
+
+pub struct ColumnInfo {
+    pub column_name: &'static str,
+    pub nullable: bool,
+    pub col_type: ColumnType,
+}
+
+impl ColumnInfo {
+    pub fn new(column_name: &'static str, nullable: bool, col_type: ColumnType) -> Self {
+        Self {
+            column_name,
+            nullable,
+            col_type,
+        }
+    }
+}
+
+pub fn verify_column(column: &str) -> Result<ColumnInfo, &str> {
+    Ok(match column {
+        "id" => ColumnInfo::new("id", true, ColumnType::PrimaryId),
+        "creation_date" => ColumnInfo::new("creation_date", false, ColumnType::Datetime),
+        "last_updated" => ColumnInfo::new("last_updated", false, ColumnType::Datetime),
+        "finalized" => ColumnInfo::new("finalized", false, ColumnType::Boolean),
+        "build_location" => ColumnInfo::new("build_location", false, ColumnType::Text),
+        "build_type" => ColumnInfo::new("build_type", false, ColumnType::Text),
+        "drive_type" => ColumnInfo::new("drive_type", false, ColumnType::Text),
+        "item_serial" => ColumnInfo::new("item_serial", false, ColumnType::Text),
+        "asm_serial" => ColumnInfo::new("asm_serial", true, ColumnType::Text),
+        "oem_serial" => ColumnInfo::new("oem_serial", false, ColumnType::Text),
+        "make_model" => ColumnInfo::new("make_model", false, ColumnType::Text),
+        "mso_installed" => ColumnInfo::new("mso_installed", false, ColumnType::Boolean),
+        "operating_system" => ColumnInfo::new("operating_system", false, ColumnType::Text),
+        "processor_gen" => ColumnInfo::new("processor_gen", false, ColumnType::Text),
+        "processor_type" => ColumnInfo::new("processor_type", false, ColumnType::Text),
+        "qc_answers" => ColumnInfo::new("qc_answers", false, ColumnType::QcAnswer),
+        "qc1_initial" => ColumnInfo::new("qc1_initial", false, ColumnType::Text),
+        "qc2_initial" => ColumnInfo::new("qc2_initial", true, ColumnType::Text),
+        "ram_size" => ColumnInfo::new("ram_size", false, ColumnType::Text),
+        "ram_type" => ColumnInfo::new("ram_type", false, ColumnType::Text),
+        "drive_size" => ColumnInfo::new("drive_size", false, ColumnType::Text),
+        "sales_order" => ColumnInfo::new("sales_order", true, ColumnType::Text),
+        "tech_notes" => ColumnInfo::new("tech_notes", false, ColumnType::Text),
+        "metadata" => ColumnInfo::new("metadata", false, ColumnType::Json),
+        _ => return Err(column),
+    })
+}
+
+type DynExpr =
+    Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
+
+struct SearchVisitor {}
+impl SearchVisitor {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl compiler::Visitor<DynExpr, VisitorError> for SearchVisitor {
+    fn eq(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        use diesel::dsl::*;
+        let column = verify_column(&ident).map_err(|c| VisitorError::InvalidColumn(c.into()))?;
+
+        match value {
+            Value::Null => Ok(Box::new(sql::<Bool>(column.column_name).sql(" IS NULL"))),
+            value => Ok(if column.nullable {
+                Box::new(
+                    sql::<Bool>("ifnull(")
+                        .sql(column.column_name)
+                        .sql(" = ")
+                        .sql(&to_sql_str(&value))
+                        .sql(", FALSE)"),
+                )
+            } else {
+                Box::new(
+                    sql::<Bool>(column.column_name)
+                        .sql(" = ")
+                        .sql(&to_sql_str(&value)),
+                )
+            }),
+        }
+    }
+    fn lt(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        use diesel::dsl::*;
+        let column = verify_column(&ident).map_err(|c| VisitorError::InvalidColumn(c.into()))?;
+
+        match value {
+            Value::Null => Ok(Box::new(sql::<Bool>("FALSE"))),
+            value => Ok(if column.nullable {
+                Box::new(
+                    sql::<Bool>("ifnull(")
+                        .sql(column.column_name)
+                        .sql(" < ")
+                        .sql(&to_sql_str(&value))
+                        .sql(", FALSE)"),
+                )
+            } else {
+                Box::new(
+                    sql::<Bool>(column.column_name)
+                        .sql(" < ")
+                        .sql(&to_sql_str(&value)),
+                )
+            }),
+        }
+    }
+    fn gt(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        use diesel::dsl::*;
+        let column = verify_column(&ident).map_err(|c| VisitorError::InvalidColumn(c.into()))?;
+
+        match value {
+            Value::Null => Ok(Box::new(sql::<Bool>("FALSE"))),
+            value => Ok(if column.nullable {
+                Box::new(
+                    sql::<Bool>("ifnull(")
+                        .sql(column.column_name)
+                        .sql(" > ")
+                        .sql(&to_sql_str(&value))
+                        .sql(", FALSE)"),
+                )
+            } else {
+                Box::new(
+                    sql::<Bool>(column.column_name)
+                        .sql(" > ")
+                        .sql(&to_sql_str(&value)),
+                )
+            }),
+        }
+    }
+
+    fn between(
+        &mut self,
+        low_value: Value,
+        ident: String,
+        high_value: Value,
+    ) -> Result<DynExpr, VisitorError> {
+        use diesel::dsl::*;
+        let column = verify_column(&ident).map_err(|c| VisitorError::InvalidColumn(c.into()))?;
+
+        match (low_value, high_value) {
+            (Value::Null, _) | (_, Value::Null) => Ok(Box::new(sql::<Bool>("FALSE"))),
+            (low_value, high_value) => Ok(if column.nullable {
+                Box::new(
+                    sql::<Bool>("ifnull(")
+                        .sql(column.column_name)
+                        .sql(" BETWEEN ")
+                        .sql(&to_sql_str(&low_value))
+                        .sql(" AND ")
+                        .sql(&to_sql_str(&high_value))
+                        .sql(", FALSE)"),
+                )
+            } else {
+                Box::new(
+                    sql::<Bool>(column.column_name)
+                        .sql(" BETWEEN ")
+                        .sql(&to_sql_str(&low_value))
+                        .sql(" AND ")
+                        .sql(&to_sql_str(&high_value)),
+                )
+            }),
+        }
+    }
+
+    fn colon(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
+        use diesel::dsl::*;
+        let column = verify_column(&ident).map_err(|c| VisitorError::InvalidColumn(c.into()))?;
+
+        match value {
+            Value::Null => Ok(Box::new(sql::<Bool>("FALSE"))),
+            value => Ok(if column.nullable {
+                Box::new(
+                    sql::<Bool>("ifnull(")
+                        .sql(column.column_name)
+                        .sql(" LIKE ")
+                        .sql(&to_sql_str(&value))
+                        .sql(", FALSE)"),
+                )
+            } else {
+                Box::new(
+                    sql::<Bool>(column.column_name)
+                        .sql(" LIKE ")
+                        .sql(&to_sql_str(&value)),
+                )
+            }),
+        }
+    }
+
+    fn or(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
+        Ok(Box::new(ls.or(rs)))
+    }
+
+    fn and(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
+        Ok(Box::new(ls.and(rs)))
+    }
+
+    fn not(&mut self, expr: DynExpr) -> std::result::Result<DynExpr, VisitorError> {
+        Ok(Box::new(diesel::dsl::not(expr)))
+    }
+}
+
+#[derive(FromForm, Debug)]
+pub(super) struct SearchForm<'f> {
+    limit: Option<i64>,
+    offset: Option<i64>,
+    search: Option<&'f str>,
+    order_table: Option<&'f str>,
+    ascending: Option<bool>,
 }
 
 macro_rules! dyn_qc_form_column {
@@ -215,295 +462,6 @@ macro_rules! dyn_qc_form_column {
     };
 }
 
-type DynExpr =
-    Box<dyn BoxableExpression<qc_forms::table, Sqlite, SqlType = diesel::sql_types::Bool>>;
-
-struct VisitorTest {}
-impl VisitorTest {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-macro_rules! unwrap_visitor_exression {
-    ($type:ty, $expr:expr) => {{
-        let val: $type = match serde_json::from_str(&$expr) {
-            Ok(ok) => ok,
-            Err(err) => return Err(VisitorError::JsonParsingError(err.to_string())),
-        };
-        val
-    }};
-}
-
-macro_rules! unwrap_visitor_value_exression {
-    ($type:ty, $expr:expr) => {{
-        let val: $type = match serde_json::from_value(Value::String($expr)) {
-            Ok(ok) => ok,
-            Err(err) => return Err(VisitorError::JsonParsingError(err.to_string())),
-        };
-        val
-    }};
-}
-
-impl compiler::Visitor<DynExpr, VisitorError> for VisitorTest {
-    fn eq(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
-        let value = if value.is_string(){
-            match value{
-                Value::String(str) => str,
-                _ => unreachable!()
-            }
-        }else{
-            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
-        };
-        dyn_qc_form_column!(
-            ident.as_str(),
-            column,
-            { Ok(Box::new(column.eq(value))) },
-            {
-                if value.is_empty() {
-                    Ok(Box::new(column.is_null()))
-                } else {
-                    Ok(Box::new(
-                        column
-                            .eq(Some(value))
-                            .and(column.is_not_null())
-                            .assume_not_null(),
-                    ))
-                }
-            },
-            {
-                Ok(Box::new(
-                    column
-                        .eq(unwrap_visitor_exression!(i32, value))
-                        .assume_not_null(),
-                ))
-            },
-            {
-                Ok(Box::new(
-                    column.eq(unwrap_visitor_value_exression!(Time, value)),
-                ))
-            },
-            { Ok(Box::new(column.eq(unwrap_visitor_exression!(bool, value)),)) },
-            { Err(VisitorError::InvalidColumnSelected(ident)) }
-        )
-    }
-    fn lt(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
-        let value = if value.is_string(){
-            match value{
-                Value::String(str) => str,
-                _ => unreachable!()
-            }
-        }else{
-            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
-        };
-        dyn_qc_form_column!(
-            ident.as_str(),
-            column,
-            { Ok(Box::new(column.lt(value))) },
-            {
-                if value.is_empty() {
-                    Err(VisitorError::ExpectedNonNull)
-                } else {
-                    Ok(Box::new(
-                        column
-                            .lt(Some(value))
-                            .and(column.is_not_null())
-                            .assume_not_null(),
-                    ))
-                }
-            },
-            {
-                Ok(Box::new(
-                    column
-                        .lt(unwrap_visitor_exression!(i32, value))
-                        .assume_not_null(),
-                ))
-            },
-            {
-                Ok(Box::new(
-                    column.lt(unwrap_visitor_value_exression!(Time, value)),
-                ))
-            },
-            { Ok(Box::new(column.lt(unwrap_visitor_exression!(bool, value)),)) },
-            { Err(VisitorError::InvalidColumnSelected(ident)) }
-        )
-    }
-    fn gt(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
-        let value = if value.is_string(){
-            match value{
-                Value::String(str) => str,
-                _ => unreachable!()
-            }
-        }else{
-            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
-        };
-        dyn_qc_form_column!(
-            ident.as_str(),
-            column,
-            { Ok(Box::new(column.gt(value))) },
-            {
-                if value.is_empty() {
-                    Err(VisitorError::ExpectedNonNull)
-                } else {
-                    Ok(Box::new(
-                        column
-                            .gt(Some(value))
-                            .and(column.is_not_null())
-                            .assume_not_null(),
-                    ))
-                }
-            },
-            {
-                Ok(Box::new(
-                    column
-                        .gt(unwrap_visitor_exression!(i32, value))
-                        .assume_not_null(),
-                ))
-            },
-            {
-                Ok(Box::new(
-                    column.gt(unwrap_visitor_value_exression!(Time, value)),
-                ))
-            },
-            { Ok(Box::new(column.gt(unwrap_visitor_exression!(bool, value)),)) },
-            { Err(VisitorError::InvalidColumnSelected(ident)) }
-        )
-    }
-
-    fn between(
-        &mut self,
-        low_value: Value,
-        ident: String,
-        high_value: Value,
-    ) -> Result<DynExpr, VisitorError> {
-        let low_value = if low_value.is_string(){
-            match low_value{
-                Value::String(str) => str,
-                _ => unreachable!()
-            }
-        }else{
-            serde_json::to_string(&low_value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
-        };
-        let high_value = if high_value.is_string(){
-            match high_value{
-                Value::String(str) => str,
-                _ => unreachable!()
-            }
-        }else{
-            serde_json::to_string(&high_value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
-        };
-        dyn_qc_form_column!(
-            ident.as_str(),
-            column,
-            { Ok(Box::new(column.between(low_value, high_value))) },
-            {
-                let low_value = if low_value.is_empty() {
-                    None
-                } else {
-                    Some(low_value)
-                };
-                let high_value = if high_value.is_empty() {
-                    None
-                } else {
-                    Some(high_value)
-                };
-                let null = low_value.is_none() | high_value.is_none();
-                let expr = Box::new(
-                    column
-                        .between(low_value, high_value)
-                        .and(column.is_not_null())
-                        .assume_not_null(),
-                );
-                if null {
-                    Ok(Box::new(expr.or(column.is_null())))
-                } else {
-                    Ok(expr)
-                }
-            },
-            {
-                Ok(Box::new(
-                    column
-                        .between(
-                            unwrap_visitor_exression!(i32, low_value),
-                            unwrap_visitor_exression!(i32, high_value),
-                        )
-                        .assume_not_null(),
-                ))
-            },
-            {
-                Ok(Box::new(column.between(
-                    unwrap_visitor_value_exression!(Time, low_value),
-                    unwrap_visitor_value_exression!(Time, high_value),
-                )))
-            },
-            {
-                Ok(Box::new(column.between(
-                    unwrap_visitor_exression!(bool, low_value),
-                    unwrap_visitor_exression!(bool, high_value),
-                )))
-            },
-            { Err(VisitorError::InvalidColumnSelected(ident)) }
-        )
-    }
-
-    fn colon(&mut self, ident: String, value: Value) -> Result<DynExpr, VisitorError> {
-        // qc_forms::creation_date.sql("")
-        // diesel::dsl::sql()
-        // diesel_dynamic_schema::table("qc_forms").column("c").sql("");
-        // diesel::sql_function!
-        let value = if value.is_string(){
-            match value{
-                Value::String(str) => str,
-                _ => unreachable!()
-            }
-        }else{
-            serde_json::to_string(&value).map_err(|e|VisitorError::JsonParsingError(format!("{:?}", e)))?
-        };
-        dyn_qc_form_column!(
-            ident.as_str(),
-            _column,
-            { Ok(Box::new(_column.like(value))) },
-            {
-                if value.is_empty() {
-                    Err(VisitorError::ExpectedNonNull)
-                } else {
-                    Ok(Box::new(
-                        _column
-                            .like(Some(value))
-                            .and(_column.is_not_null())
-                            .assume_not_null(),
-                    ))
-                }
-            },
-            { Err(VisitorError::InvalidTypeUsedWithLikeOperator("Option<i32>")) },
-            { Err(VisitorError::InvalidTypeUsedWithLikeOperator("DateTime")) },
-            { Err(VisitorError::InvalidTypeUsedWithLikeOperator("bool")) },
-            { Err(VisitorError::InvalidColumnSelected(ident)) }
-        )
-    }
-
-    fn or(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
-        Ok(Box::new(ls.or(rs)))
-    }
-
-    fn and(&mut self, ls: DynExpr, rs: DynExpr) -> Result<DynExpr, VisitorError> {
-        Ok(Box::new(ls.and(rs)))
-    }
-
-    fn not(&mut self, expr: DynExpr) -> std::result::Result<DynExpr, VisitorError> {
-        Ok(Box::new(expr.eq(false)))
-    }
-}
-
-#[derive(FromForm, Debug)]
-pub(super) struct SearchForm<'f> {
-    limit: Option<i64>,
-    offset: Option<i64>,
-    search: Option<&'f str>,
-    order_table: Option<&'f str>,
-    ascending: Option<bool>,
-}
-
 #[post("/search", data = "<search>")]
 pub(super) async fn search(
     db: Db,
@@ -511,7 +469,7 @@ pub(super) async fn search(
 ) -> Result<Json<Vec<ExistingQCForm>>> {
     let mut boxed = qc_forms::table.into_boxed();
 
-    let mut visitor = VisitorTest::new();
+    let mut visitor = SearchVisitor::new();
     'search: {
         if let Some(search) = search.search {
             if search.is_empty() || search.trim().is_empty() {
@@ -534,20 +492,27 @@ pub(super) async fn search(
             order_table = "id";
         }
 
-        dyn_qc_form_column!(
-            order_table.trim(),
-            column,
-            {
-                if search.ascending.unwrap_or(true) {
-                    boxed = boxed.order_by(column.asc())
-                } else {
-                    boxed = boxed.order_by(column.desc())
-                }
-            },
-            {
-                return Err(DataBaseError::InvalidColumn(order_table.to_owned()));
-            }
-        );
+        let column = verify_column(order_table.trim())
+            .map_err(|c| DataBaseError::InvalidColumn(c.into()))?;
+        if search.ascending.unwrap_or(true) {
+            dyn_qc_form_column!(
+                column.column_name,
+                col,
+                {
+                    boxed = boxed.order_by(col.asc());
+                },
+                {}
+            );
+        } else {
+            dyn_qc_form_column!(
+                column.column_name,
+                col,
+                {
+                    boxed = boxed.order_by(col.desc());
+                },
+                {}
+            );
+        }
     }
 
     if let Some(limit) = search.limit {

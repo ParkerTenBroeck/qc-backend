@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use serde::Serialize;
 use serde_json::Value;
 
-use super::tokenizer::{Token, TokenFull, Tokenizer, TokenErrorFull};
+use super::tokenizer::{Token, TokenErrorFull, TokenFull, Tokenizer};
 
 pub struct ExpressionParser<'a, 'b, T, E> {
     tokenizer: Peekable<Tokenizer<'a>>,
@@ -206,11 +206,9 @@ impl<'a, 'b, T, E> ExpressionParser<'a, 'b, T, E> {
                         let ident = expect_ident!(unwrap_token!(self.tokenizer.next()));
                         expect_tok!(unwrap_token!(self.tokenizer.next()), Token::Lt);
                         let high_value = expect_value!(unwrap_token!(self.tokenizer.next()));
-                        return Ok(unwrap_visitor!(self.visitor.between(
-                            low_value,
-                            ident,
-                            high_value
-                        )));
+                        return Ok(unwrap_visitor!(self
+                            .visitor
+                            .between(low_value, ident, high_value)));
                     } else if tok.data == Token::Bang {
                         state_stack.push(State::BottomReturn2);
                         state_stack.push(State::BottomCalled);

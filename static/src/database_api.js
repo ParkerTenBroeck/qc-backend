@@ -74,7 +74,7 @@ async function search(limit, query, sortby, ascending, offset) {
 
 function to_db_date(date) {
     let year = date.getUTCFullYear();
-    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    year = (year<0 ? "-" : "") + Math.abs(year).toString().padStart(4, "0")
     
 
     let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
@@ -85,13 +85,13 @@ function to_db_date(date) {
     let seconds = date.getUTCSeconds().toString().padStart(2, "0");
 
     let milis = date.getUTCMilliseconds().toString().padStart(3, "0");
-    let micros = "000000";
-    return year + "-" + month + "-" + day_date + "T" + hour + ":" + minute + ":" + seconds + "." + milis + micros + "Z";
+    // let micros = "000000";
+    return year + "-" + month + "-" + day_date + " " + hour + ":" + minute + ":" + seconds + "." + milis + "+00:00";
 }
 
 function start_of_db_date(date) {
     let year = date.getUTCFullYear();
-    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    year = (year<0 ? "-" : "") + Math.abs(year).toString().padStart(4, "0")
     
 
     let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
@@ -102,13 +102,13 @@ function start_of_db_date(date) {
     let seconds = "00";
 
     let milis = "000";
-    let micros = "000000";
-    return year + "-" + month + "-" + day_date + "T" + hour + ":" + minute + ":" + seconds + "." + milis + micros + "Z";
+    // let micros = "000000";
+    return year + "-" + month + "-" + day_date + " " + hour + ":" + minute + ":" + seconds + "." + milis + "+00:00";
 }
 
 function end_of_db_date(date) {
     let year = date.getUTCFullYear();
-    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    year = (year<0 ? "-" : "") + Math.abs(year).toString().padStart(4, "0")
     
 
     let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
@@ -119,13 +119,13 @@ function end_of_db_date(date) {
     let seconds = "59";
 
     let milis = "999";
-    let micros = "999999";
-    return year + "-" + month + "-" + day_date + "T" + hour + ":" + minute + ":" + seconds + "." + milis + micros + "Z";
+    // let micros = "999999";
+    return year + "-" + month + "-" + day_date + " " + hour + ":" + minute + ":" + seconds + "." + milis + "+00:00";
 }
 
 function on_date_wildcard(date) {
     let year = date.getUTCFullYear();
-    year = (year<0 ? "-" : "+") + Math.abs(year).toString().padStart(6, "0")
+    year = (year<0 ? "-" : "") + Math.abs(year).toString().padStart(4, "0")
     
 
     let month = (date.getUTCMonth() + 1).toString().padStart(2, "0");

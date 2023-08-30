@@ -179,3 +179,128 @@ fn rocket() -> _ {
             .rank(5),
         )
 }
+
+mod test {
+    use diesel::{
+        expression::AsExpression, query_dsl::methods::FilterDsl, serialize::ToSql, sql_types::Text,
+        sqlite::Sqlite, BoolExpressionMethods, ExpressionMethods, IntoSql,
+    };
+    use serde_json::Value;
+
+    use crate::database::schema::qc_forms;
+
+    fn to_sql_str(value: &Value) -> String {
+        match value {
+            Value::Null => "NULL".into(),
+            Value::Bool(bool) => (if *bool { "1" } else { "0" }).into(),
+            Value::Number(num) => {
+                if let Some(uint) = num.as_u64() {
+                    format!("{}", uint as i64)
+                } else if let Some(int) = num.as_i64() {
+                    format!("{}", int)
+                } else if let Some(float) = num.as_f64() {
+                    format!("{}", float)
+                } else {
+                    num.to_string()
+                }
+            }
+            string @ Value::String(_) => serde_json::to_string(string).unwrap_or("NULL".into()),
+            other => serde_json::to_string(other)
+                .and_then(|s| serde_json::to_string(&Value::String(s)))
+                .unwrap_or("NULL".into()),
+        }
+    }
+
+    // impl ToSql<diesel::sql_types::Text, Sqlite> for Stupid {
+    //     fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, Sqlite>) -> diesel::serialize::Result {
+    //         // Bound::new(12);
+    //         match &self.0{
+    //             Value::Null => return Ok(diesel::serialize::IsNull::Yes),
+    //             Value::Bool(bool) => out.set_value(if *bool {1} else {0}),
+    //             Value::Number(num) => {
+    //                 if let Some(uint) = num.as_u64(){
+    //                     out.set_value(uint as i64)
+    //                 }else if let Some(int) = num.as_i64(){
+    //                     out.set_value(int)
+    //                 }else if let Some(float) = num.as_f64(){
+    //                     out.set_value(float)
+    //                 }else{
+    //                     let arb = num.to_string();
+    //                     out.set_value(arb);
+    //                 }
+    //             },
+    //             Value::String(str) => {
+    //                 out.set_value(str.as_str());
+    //             },
+    //             other => {
+    //                 out.set_value(serde_json::to_string(&other).unwrap_or(String::new()))
+    //             }
+    //         }
+    //         Ok(diesel::serialize::IsNull::No)
+    //     }
+    // }
+
+    // fn bind_val<ST>(post_sql: &str, value: Value, post_fix: &str) -> DynExpr{
+    //     // 12.to_sql(out)
+    //     use diesel::sql_types::*;
+    //     match value{
+    //         Value::Null => {
+    //             Box::new(diesel::dsl::sql::<Bool>(post_sql).is_null())
+    //         },
+    //         Value::Bool(val) => {
+    //             Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<Bool, _>(val))
+    //         },
+    //         Value::Number(num) => {
+    //             if let Some(uint) = num.as_u64(){
+    //                 Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<BigInt, _>(uint as i64))
+    //             }else if let Some(int) = num.as_i64(){
+    //                 Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<BigInt, _>(int))
+    //             }else if let Some(float) = num.as_f64(){
+    //                 Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<Double, _>(float))
+    //             }else{
+    //                 let arb = num.to_string();
+    //                 Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<Text, _>(arb))
+    //             }
+    //         },
+    //         Value::String(str) => {
+    //             Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<Text, _>(str))
+    //         },
+    //         other => {
+    //             Box::new(diesel::dsl::sql::<Bool>(post_sql).bind::<Text, _>(serde_json::to_string(&other).unwrap_or(String::new())))
+    //         }
+    //     }
+    // }
+
+    #[test]
+    fn bruh() {
+        use diesel::sql_types::*;
+        let sql1 = diesel::dsl::sql::<Bool>("ifnull(")
+            .sql("asm_serial = ")
+            .sql(&to_sql_str(&Value::Bool(false)))
+            .sql(", FALSE)");
+        let sql2 = diesel::dsl::sql::<Bool>("ifnull(")
+            .sql("asm_serial = ")
+            .sql(&to_sql_str(&Value::String("\"'".into())))
+            .sql(", FALSE)");
+        let sql3 = diesel::dsl::sql::<Bool>("ifnull(")
+            .sql("asm_serial = ")
+            .sql(&to_sql_str(&Value::Null))
+            .sql(", FALSE)");
+        let sql4 = diesel::dsl::sql::<Bool>("ifnull(")
+            .sql("asm_serial = ")
+            .sql(&to_sql_str(&Value::Array(vec![
+                Value::Bool(false),
+                Value::Bool(true),
+                Value::Null,
+                Value::String("\"' Hii~".into()),
+                Value::Number(12.into()),
+            ])))
+            .sql(", FALSE)");
+        let sql = sql1.or(sql2).or(sql3).or(sql4);
+
+        println!(
+            "{}",
+            diesel::debug_query::<Sqlite, _>(&qc_forms::table.filter(sql))
+        );
+    }
+}

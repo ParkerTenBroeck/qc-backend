@@ -116,6 +116,7 @@
             "touchscreen_user_input": {"question": "Touchscreen functional", "whitelist_build_types": ["laptop", "tablet"]},
             "check_camera": {"question": "Webcam video/audio working", "whitelist_build_types": ["laptop", "tablet"]},
             "harddrive_os_size": {"question": "Correct HD size reported in OS"},
+            "harddrive_health": {"question": "Check Hard Drive(s) Health"},
             "default_programs": {"question": "Set default Programs"},
             "verify_ports": {"question": "Verify all ports (USB, Video, Sound)"},
             "sound_output": {"question": "Verify sound output (Internal Speakers)"},
