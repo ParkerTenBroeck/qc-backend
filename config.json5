@@ -165,6 +165,7 @@
                     "touchscreen_user_input",
                     "check_camera",
                     "harddrive_os_size",
+                    "harddrive_health",
                     "default_programs",
                     "verify_ports",
                     "sound_output",
