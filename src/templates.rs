@@ -66,6 +66,32 @@ async fn database_page(items: &Config) -> Template {
     )
 }
 
+#[get("/printable/<id>?finalize")]
+pub async fn printable_finaize(items: &Config, id: i32, db: Db) -> database::Result<Template> {
+    use database::schema::qc_forms;
+    use diesel::*;
+    let values = db
+        .run(move |conn| {
+            diesel::update(qc_forms::table.find(id))
+                .set(qc_forms::finalized.eq(true))
+                .execute(conn)?;
+            database::Result::<database::ExistingQCForm>::Ok(
+                database::schema::qc_forms::table
+                    .find(id)
+                    .get_result::<database::ExistingQCForm>(conn)?,
+            )
+        })
+        .await?;
+
+    Ok(Template::render(
+        "printable",
+        context! {
+            items: &items.0,
+            values,
+        },
+    ))
+}
+
 #[get("/printable/<id>")]
 pub async fn printable(items: &Config, id: i32, db: Db) -> database::Result<Template> {
     let values = db.get_form(id).await?;
@@ -88,7 +114,8 @@ pub fn stage() -> AdHoc {
                 qc_form_id,
                 qc_form_provided,
                 database_page,
-                printable
+                printable,
+                printable_finaize
             ],
         )
     })
