@@ -1,5 +1,7 @@
 {{#*inline "drop_down"}}
-<label for="{{id}}" class="col-sm-1 col-form-label ">{{name}}</label>
+<label for="{{id}}" class="col-sm-1 col-form-label "
+{{#if items.title}}title="{{items.title}}"{{/if}}
+>{{name}}</label>
 <div class="col-sm-3 ">
     <select required class="custom-select qc-form-item" {{#if properties}}{{{properties}}}{{/if}} id="{{id}}" name="{{id}}">
         <option value="" {{#if selected_val}}selected{{/if}} hidden>Choose...</option>
@@ -60,15 +62,18 @@
             {{> drop_down id="build_location" items=this.items.build_locations name="RCT Location"
             selected_value=this.values.build_location}}
 
-            <label for="qc1_initial" class="col-sm-1 col-form-label ">QC1 Initial</label>
+            <label for="qc1_initial" class="col-sm-1 col-form-label "
+            {{#if this.items.initials.title}}title="{{this.items.initials.title}}" {{/if}}
+            >QC1 Initial</label>
             <div class="col-sm-3">
                 <input required type="text" class="form-control qc-form-item" id="qc1_initial" name="qc1_initial" 
-                {{!-- {{#if this.values.qc1_initial}}value="{{this.values.qc1_initial}}" {{/if}}  --}}
                 {{#if this.items.initials.pattern}}pattern="{{this.items.initials.pattern}}" {{/if}}
                     placeholder="Assembly Tech">
             </div>
 
-            <label for="qc2_initial" class="col-sm-1 col-form-label ">QC2 Initial</label>
+            <label for="qc2_initial" class="col-sm-1 col-form-label "
+            {{#if this.items.initials.title}}title="{{this.items.initials.title}}" {{/if}}
+            >QC2 Initial</label>
             <div class="col-sm-3">
                 <input type="text" class="form-control qc-form-item" id="qc2_initial" name="qc2_initial" 
                 {{!-- {{#if values.qc2_initial}}value="{{values.qc2_initial}}" {{/if}}  --}}
@@ -81,11 +86,14 @@
             {{> drop_down id="build_type" items=this.items.build_types name="Build Type"
             selected_value=this.values.build_type properties="onchange='update_build_type(this)'"}}
 
-            <label for="sales_order" class="col-sm-1 col-form-label  ">Sales Order</label>
+            <label for="sales_order" class="col-sm-1 col-form-label  "
+            {{#if this.items.sales_order.title}}title="{{this.items.sales_order.title}}" {{/if}}
+                
+            >Sales Order</label>
             <div class="col-sm-3">
                 <input class="form-control qc-form-item" id="sales_order" name="sales_order" 
                 {{#if this.items.sales_order.pattern}}pattern="{{this.items.sales_order.pattern}}" {{/if}} 
-                {{#if this.values.sales_order}}value="{{this.values.sales_order}}" {{/if}}>
+                >
             </div>
 
             <div class="col-sm-1">
@@ -100,11 +108,14 @@
         </div>
         <div class="form-group row">
 
-            <label for="oem_serial" class="col-sm-1 col-form-label ">Oem Serial</label>
+            <label for="oem_serial" class="col-sm-1 col-form-label "
+            {{#if this.items.oem_serial.title}}title="{{this.items.oem_serial.title}}" {{/if}} 
+            >Oem Serial</label>
             <div class="col-sm-3" id="all_oem_serial">
                 <div>
                     <input required type="text" class="form-control qc-form-item" id="oem_serial" name="oem_serial"
-                        tag="input" {{#if this.items.oem_serial.pattern}}pattern="{{this.items.oem_serial.pattern}}"{{/if}} 
+                        tag="input" 
+                        {{#if this.items.oem_serial.pattern}}pattern="{{this.items.oem_serial.pattern}}"{{/if}} 
                         ></input>
                 </div>
                 <div style="display:flex;height:0">
@@ -129,7 +140,9 @@
                 <input required type="text" class="form-control qc-form-item" id="oem_serial" name="sales_order">
             </div> -->
 
-            <label for="item_serial" class="col-sm-1 col-form-label ">Item Serial</label>
+            <label for="item_serial" class="col-sm-1 col-form-label "
+            {{#if this.items.item_serial.title}}title="{{this.items.item_serial.title}}"{{/if}} 
+            >Item Serial</label>
             <div class="col-sm-3" id="all_item_serial">
                 <div>
                     <input required type="text" class="form-control qc-form-item" id="item_serial" name="item_serial" tag="input"
@@ -159,7 +172,9 @@
                 <input required pattern="[a-zA-Z]+-[0-9]{7}" type="text" class="form-control qc-form-item" id="item_serial" name="rctpackage">
             </div> -->
 
-            <label for="asm_serial" class="col-sm-1 col-form-label ">Asm Serial</label>
+            <label for="asm_serial" class="col-sm-1 col-form-label "
+            {{#if this.items.asm_serial.title}}title="{{this.items.asm_serial.title}}"{{/if}} 
+            >Asm Serial</label>
             <div class="col-sm-3" id="all_asm_serial">
                 <div>
                     <input type="text" class="form-control qc-form-item" id="asm_serial" name="asm_serial" tag="input"

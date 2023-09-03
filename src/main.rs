@@ -107,7 +107,7 @@ fn rocket() -> _ {
                             "Provided config '{}' is malformed\n{err:?}",
                             path.display()
                         );
-                        todo!()
+                        panic!();
                     }
                 }
             } else {
@@ -152,11 +152,16 @@ fn rocket() -> _ {
                     .register_helper("contains", Box::new(helper::contains));
                 engine.handlebars.set_strict_mode(true);
 
+                // engine.handlebars.engine().ru;
+                // engine.handlebars.register
+
                 let scripts = std::fs::read_dir(&path)?;
                 for path in scripts.flatten() {
                     // path.path().file_stem()
                     if let Some(name) = path.path().file_stem().map(|s| s.to_str()).unwrap_or(None)
                     {
+                        // engine.handlebars.register_he
+                        // ScriptHelper
                         // println!("{name}");
                         engine
                             .handlebars

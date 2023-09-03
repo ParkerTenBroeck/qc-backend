@@ -180,7 +180,12 @@
             {{#each @root.items.database.order as |column_id|}}
                 {{#with (lookup @root.items.database.columns column_id) as |column| }}
                 <td><button data-toggle="button" type="button" class="btn btn-primary btn-sm row_visibility_button {{#if column.show}}active{{/if}}"
-                        {{#if column.show}}active{{/if}} onclick="updateVisibleComumns({{@../index}})"><span>{{column.name}}</span></button></td>
+                        {{#if column.show}}active{{/if}} onclick="updateVisibleComumns({{@../index}})"
+                        {{#if column.db_column}}
+                            title="Search name: {{column_id}}"
+                        {{else}}
+                            title="Not directly searchable"
+                        {{/if}}><span>{{column.name}}</span></button></td>
                 {{/with}}
             {{/each}}
         </tr>
@@ -216,7 +221,13 @@
                 <th scope="col">#</th>
                 {{#each @root.items.database.order as |column_id|}}
                     {{#with (lookup @root.items.database.columns column_id) as |column| }}
-                    <th scope="col">{{column.name}}</th>
+                    <th scope="col"
+                    {{#if column.db_column}}
+                            title="Search name: {{column_id}}"
+                        {{else}}
+                            title="Not directly searchable"
+                        {{/if}}
+                        >{{column.name}}</th>
                     {{/with}}
                 {{/each}}
             </tr>

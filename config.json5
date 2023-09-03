@@ -1,16 +1,25 @@
 {
-    "initials": {"pattern": "[A-Z]{2}"},
+    "initials": {
+        "title": "Initials of the respective QC, (First Name Initial)(Last Name Initial) Both uppercase. ex 'PT'",
+        "pattern": "[A-Z]{2}"
+    },
     "sales_order": {
+        "title": "The sales order number padded to 8 digets with leading zeros. ex '00013761'",
         "pattern": "[0-9]{8}"
     },
     "oem_serial": {
+        "title": "OEM serial number. No leading or trailing whitespace allowed",
         "pattern": "^(?! ).*(?<! )$"
     },
     "make_model": {
+        "title": "Make/Model of device. No leading or trailing whitespace allowed",
         "pattern": "^(?! ).*(?<! )$"
     },
-    "item_serial": {"pattern": "([A-Z0-9]+-)+[0-9]{7}"},
+    "item_serial": {
+        "pattern": "([A-Z0-9]+-)+[0-9]{7}"
+    },
     "asm_serial": {
+        "title": "The value scanned from the ASM serial number. ex 'CFS-LT100-00556'",
         "pattern": "(CFS|OTR)-[A-Z0-9_]+-[0-9]{5,7}"
     },
     "build_locations": {"order": ["NIA", "MIA", "GTA"], "values": {"NIA": {"name": "NIA"}, "MIA": {"name": "MIA"}, "GTA": {"name": "GTA"}}},
@@ -69,10 +78,12 @@
         }
     },
     "drive_types": {
+        "title": "The type of drive the OS is installed on",
         "order": ["hdd", "ssd", "msata", "m2sata", "m2nvme"],
         "values": {"hdd": {"name": "Hard Disk Drive"}, "ssd": {"name": "Solid State Drive"}, "msata": {"name": "M Sata"}, "m2sata": {"name": "M.2 Sata"}, "m2nvme": {"name": "NVMe"}}
     },
     "drive_sizes": {
+        "title": "The size of drive the OS is installed on",
         "order": ["GB128", "GB250", "GB256", "GB320", "GB400", "GB500", "GB600", "GB640", "GB600", "GB720", "GB800", "TB001", "TB002", "TB004"],
         "values": {
             "GB128": {"name": "128 GB", "size_bytes": 128000000000},
