@@ -28,7 +28,6 @@ let fields = [
     "qc2_initial",
     "ram_size",
     "ram_type",
-    "sales_order",
     "drive_size",
 ];
 
