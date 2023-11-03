@@ -64,6 +64,7 @@ async function update_form() {
     }else{
         let json = await res.json();
         update_form_values(json);
+        alert("Updated values");
     }
 }
 
