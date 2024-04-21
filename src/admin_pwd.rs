@@ -24,13 +24,13 @@ impl<'r> FromRequest<'r> for Admin {
             if admin_password.0 == provided_password {
                 rocket::request::Outcome::Success(Admin(std::marker::PhantomData))
             } else {
-                rocket::request::Outcome::Failure((
+                rocket::request::Outcome::Error((
                     rocket::http::Status::Forbidden,
                     InvalidPassword,
                 ))
             }
         } else {
-            rocket::request::Outcome::Failure((rocket::http::Status::Forbidden, InvalidPassword))
+            rocket::request::Outcome::Error((rocket::http::Status::Forbidden, InvalidPassword))
         }
     }
 }

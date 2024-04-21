@@ -47,7 +47,7 @@ impl<'r> FromRequest<'r> for &'r Config {
         if let Some(config) = request.rocket().state::<Config>() {
             rocket::request::Outcome::Success(config)
         } else {
-            rocket::outcome::Outcome::Failure((
+            rocket::outcome::Outcome::Error((
                 rocket::http::Status::InternalServerError,
                 FailedToObtainConfig,
             ))
